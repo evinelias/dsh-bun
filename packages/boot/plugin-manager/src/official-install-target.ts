@@ -22,6 +22,7 @@ function manifestAt(file: string): WorkspaceManifest {
  * @throws when a source installation lacks its workspace package, bundle patch, or built runtime.
  */
 export function officialBundleInstallTarget(name: string, installAnchor: string, version: string): { spec: string; version: string } {
+  if (!existsSync(installAnchor)) return { spec: `${name}@${version}`, version }
   const anchor = realpathSync(installAnchor)
   const installation = manifestAt(anchor)
   const source = installation.name === '@deepseek-ai/dsh'

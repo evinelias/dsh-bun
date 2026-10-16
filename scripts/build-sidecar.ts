@@ -139,6 +139,14 @@ async function main() {
   copyClientPlugins(distWebDist, root)
   console.log(`[+] Bundled ${sidecarClientCount} client plugins into web-dist/client-plugins`)
 
+  // Copy installation package.json so standalone/packaged runtimes have an install anchor
+  const cliPkgSrc = join(root, 'apps', 'cli', 'package.json')
+  cpSync(cliPkgSrc, join(sidecarWebDist, 'package.json'))
+  cpSync(cliPkgSrc, join(distWebDist, 'package.json'))
+  cpSync(cliPkgSrc, join(binariesDir, 'package.json'))
+  cpSync(cliPkgSrc, join(distDir, 'package.json'))
+  console.log('[+] Bundled package.json into web-dist and binaries directories')
+
   console.log(`[+] Sidecar successfully built: ${sidecarPath}`)
   console.log(`[+] Standalone binary: ${distPath}`)
   console.log('=== Sidecar build complete! ===')

@@ -120,6 +120,13 @@ interface InstallationManifest {
   dependencies?: Record<string, string>
 }
 
+function readInstallationManifest(anchor: string): InstallationManifest {
+  try {
+    if (existsSync(anchor)) return JSON.parse(readFileSync(anchor, 'utf8')) as InstallationManifest
+  } catch {}
+  return { dependencies: {} }
+}
+
 /** What a package manifest says about the package: identity, one-liner, and whether it is a bundle. */
 function inspectionOf(kind: 'registry' | 'path', manifest: object, registry: Registry): Extract<PluginSpecInspection, { status: 'accepted' }> {
   const dsh = (manifest as { dsh?: unknown }).dsh
@@ -319,7 +326,7 @@ export class PluginManager extends TypertRemoteService {
     const selected = bundleSelection(manifest)
     const recorded = manifest.dependencies ?? {}
     const dependencies = Object.keys(recorded)
-    const installation = JSON.parse(readFileSync(this.profile.installAnchor, 'utf8')) as InstallationManifest
+    const installation = readInstallationManifest(this.profile.installAnchor)
     const catalog = new Map(OFFICIAL_ON_DEMAND_CATALOG.map(entry => [entry.packageName, entry]))
     const names = [...new Set([...selected, ...dependencies, ...Object.keys(installation.dependencies ?? {}), ...catalog.keys()])]
     const bundles: BundleInfo[] = []
@@ -415,7 +422,7 @@ export class PluginManager extends TypertRemoteService {
       return refused('invalid-spec', error.reason)
     }
     const manifest = readProfileManifest('dsh', this.profile.dir)
-    const installation = JSON.parse(readFileSync(this.profile.installAnchor, 'utf8')) as InstallationManifest
+    const installation = readInstallationManifest(this.profile.installAnchor)
     const known = new Set([
       ...bundleSelection(manifest), ...Object.keys(manifest.dependencies ?? {}), ...Object.keys(installation.dependencies ?? {}),
     ])

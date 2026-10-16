@@ -82,12 +82,21 @@ function getInstallAnchor(): string {
   } catch {}
   let dir = dirname(process.execPath)
   for (let i = 0; i < 6; i++) {
-    const candidate = join(dir, 'package.json')
-    if (existsSync(candidate)) {
-      try {
-        const pkg = JSON.parse(readFileSync(candidate, 'utf8'))
-        if (pkg.name?.startsWith('@deepseek-ai/')) return candidate
-      } catch {}
+    const candidates = [
+      join(dir, 'package.json'),
+      join(dir, 'web-dist', 'package.json'),
+      join(dir, 'binaries', 'package.json'),
+      join(dir, 'binaries', 'web-dist', 'package.json'),
+      join(dir, '..', 'web-dist', 'package.json'),
+      join(dir, '..', 'Resources', 'web-dist', 'package.json'),
+    ]
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        try {
+          const pkg = JSON.parse(readFileSync(candidate, 'utf8'))
+          if (pkg.name?.startsWith('@deepseek-ai/')) return candidate
+        } catch {}
+      }
     }
     const parent = dirname(dir)
     if (parent === dir) break
@@ -95,6 +104,8 @@ function getInstallAnchor(): string {
   }
   const cwdCli = resolve(process.cwd(), 'apps/cli/package.json')
   if (existsSync(cwdCli)) return cwdCli
+  const homePkg = join(resolveDshHome(), 'package.json')
+  if (existsSync(homePkg)) return homePkg
   return resolve(process.cwd(), 'package.json')
 }
 /** Absolute path of this dsh installation's package.json (both anchors: src/ and lib/ sit one level under apps/cli). */
