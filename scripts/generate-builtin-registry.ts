@@ -1,85 +1,92 @@
 /**
- * Regenerates apps/cli/src/builtin-plugins.generated.ts by scanning packages/ and vendor/
- * for all Cordis plugins and Typert modules.
+ * Generates apps/cli/src/builtin-plugins.generated.ts by reading all official profile templates
+ * and bundling their registered plugins and Typert schemas for standalone Bun builds.
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { writeFileSync, existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { loadProfile, readProfilePatches, PROFILE_TEMPLATES } from '@deepseek-ai/dsh-app-boot'
+import { INSTALL_ANCHOR } from '../apps/cli/src/profile-boot.ts'
 
 const root = resolve(import.meta.dir, '..')
 const outputFile = join(root, 'apps', 'cli', 'src', 'builtin-plugins.generated.ts')
 
-function findPackages(dir: string, list: { name: string; exports: string[] }[] = []): { name: string; exports: string[] }[] {
-  if (!statSync(dir).isDirectory()) return list
-  const entries = readdirSync(dir)
-  const pkgPath = join(dir, 'package.json')
+console.log('Resolving builtin plugins from official profile templates...')
 
+const allPlugins = new Set<string>()
+
+// 1. Gather all plugins from official profiles
+for (const profileName of Object.keys(PROFILE_TEMPLATES)) {
   try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
-    if (pkg.name && (pkg.name.startsWith('@deepseek-ai/') || pkg.name.startsWith('cordis-plugin-'))) {
-      const expList: string[] = ['']
-      if (pkg.exports && typeof pkg.exports === 'object') {
-        for (const key of Object.keys(pkg.exports)) {
-          if (key === '.' || key === './package.json') continue
-          const sub = key.replace(/^\.\/?/, '')
-          if (sub && !sub.includes('*') && !sub.endsWith('.d.ts')) {
-            expList.push(sub)
-          }
+    const profile = loadProfile('dsh', profileName, INSTALL_ANCHOR)
+    const patches = readProfilePatches('dsh', {
+      name: profileName,
+      dir: profile.dir,
+      patchPath: profile.patchPath,
+      installAnchor: INSTALL_ANCHOR,
+      home: join(homedir(), '.dsh'),
+      cwd: process.cwd(),
+      overlays: [],
+      startedBundles: profile.layers.map(l => l.packageName),
+    }, profile)
+
+    for (const p of patches) {
+      for (const ins of p.insert || []) {
+        if (ins.name && !ins.name.startsWith('cordis:')) {
+          allPlugins.add(ins.name)
         }
       }
-      list.push({ name: pkg.name, exports: expList })
     }
-  } catch {}
-
-  for (const entry of entries) {
-    if (entry === 'node_modules' || entry === 'dist' || entry === 'target' || entry.startsWith('.')) continue
-    const full = join(dir, entry)
-    try {
-      if (statSync(full).isDirectory()) {
-        findPackages(full, list)
-      }
-    } catch {}
-  }
-  return list
-}
-
-console.log('Scanning packages for Cordis plugins and Typert definitions...')
-const packages = findPackages(join(root, 'packages'))
-findPackages(join(root, 'vendor'), packages)
-
-// Read current generated file to preserve any manual/curated entries if needed
-const existingKeys: string[] = []
-try {
-  const currentContent = readFileSync(outputFile, 'utf8')
-  const matches = currentContent.matchAll(/"([^"]+)":/g)
-  for (const m of matches) {
-    existingKeys.push(m[1])
-  }
-} catch {}
-
-const allEntries = new Set<string>(existingKeys)
-
-for (const pkg of packages) {
-  for (const sub of pkg.exports) {
-    const spec = sub ? `${pkg.name}/${sub}` : pkg.name
-    allEntries.add(spec)
+  } catch (err) {
+    console.warn(`Warning loading profile ${profileName}:`, err)
   }
 }
 
-const sortedKeys = Array.from(allEntries).sort()
-
-console.log(`Discovered ${sortedKeys.length} builtin plugin and Typert specs. Generating ${outputFile}...`)
-
-const lines: string[] = [
-  '// Auto-generated builtin plugin registry for standalone Bun builds',
-  'export const BUILTIN_PLUGINS: Record<string, () => Promise<any>> = {',
+// 2. Add native directory pickers and web startup essentials
+const extraPlugins = [
+  '@deepseek-ai/cordis-plugin-timer',
+  '@deepseek-ai/dsh-host-directory-picker-native',
+  '@deepseek-ai/dsh-client-ui-directory-picker-native',
+  '@deepseek-ai/dsh-client-ui-directory-picker-browse',
+  '@deepseek-ai/dsh-web-app/startup',
+  '@deepseek-ai/dsh-web',
+  '@deepseek-ai/dsh-web-app',
+  '@deepseek-ai/dsh-workflow-ptc',
 ]
 
-for (const key of sortedKeys) {
-  lines.push(`  "${key}": () => import("${key}"),`)
+for (const extra of extraPlugins) {
+  allPlugins.add(extra)
 }
 
-lines.push('};\n')
+// 3. Check for companion /typert exports
+for (const name of Array.from(allPlugins)) {
+  const typertSpec = `${name}/typert`
+  try {
+    require.resolve(typertSpec)
+    allPlugins.add(typertSpec)
+  } catch {}
+}
+
+// 4. Verify all entries resolve cleanly in Bun
+const validPlugins: string[] = []
+for (const spec of allPlugins) {
+  try {
+    require.resolve(spec)
+    validPlugins.push(spec)
+  } catch {}
+}
+
+validPlugins.sort()
+
+console.log(`Discovered ${validPlugins.length} builtin plugins. Generating ${outputFile}...`)
+
+const lines = [
+  '// Auto-generated builtin plugin registry for standalone Bun builds',
+  'export const BUILTIN_PLUGINS: Record<string, () => Promise<any>> = {',
+  ...validPlugins.map(name => `  ${JSON.stringify(name)}: () => import(${JSON.stringify(name)}),`),
+  '};\n',
+]
 
 writeFileSync(outputFile, lines.join('\n'), 'utf8')
-console.log(`[✓] Successfully generated ${sortedKeys.length} entries in builtin-plugins.generated.ts`)
+console.log(`[✓] Generated ${outputFile} with ${validPlugins.length} verified plugins.`)

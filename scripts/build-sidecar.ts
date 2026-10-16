@@ -4,6 +4,9 @@ import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 function getTargetTriple(): string {
+  if (process.env.TARGET_TRIPLE) {
+    return process.env.TARGET_TRIPLE.trim()
+  }
   // Try rustc first
   const rustcCandidates = [
     'rustc',
@@ -50,15 +53,19 @@ async function main() {
   const triple = getTargetTriple()
   console.log(`[2/4] Detected target triple: ${triple}`)
 
-  const ext = process.platform === 'win32' ? '.exe' : ''
+  const isWindows = triple.includes('windows')
+  const ext = (process.env.EXT !== undefined && process.env.EXT !== '')
+    ? process.env.EXT
+    : (isWindows ? '.exe' : '')
   const sidecarName = `dsh-bun-${triple}${ext}`
   const binariesDir = join(root, 'apps', 'desktop', 'src-tauri', 'binaries')
   mkdirSync(binariesDir, { recursive: true })
   const sidecarPath = join(binariesDir, sidecarName)
 
   // 3. Compile standalone sidecar binary
-  console.log(`[3/4] Compiling Bun standalone sidecar binary to ${sidecarPath}...`)
-  execSync(`bun build apps/cli/src/bin.ts --compile --outfile "${sidecarPath}"`, {
+  const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
+  console.log(`[3/4] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
+  execSync(`bun build apps/cli/src/bin.ts --compile ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
     stdio: 'inherit',
   })
