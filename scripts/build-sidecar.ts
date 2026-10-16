@@ -49,6 +49,9 @@ async function main() {
   console.log('[1/5] Building client packages (78 plugins)...')
   execSync('bun scripts/build-client-packages.ts', { cwd: root, stdio: 'inherit' })
 
+  console.log('[1.5/5] Regenerating builtin plugins registry...')
+  execSync('bun scripts/generate-builtin-registry.ts', { cwd: root, stdio: 'inherit' })
+
   // 2. Build apps/web
   console.log('[2/5] Building Web UI frontend (apps/web)...')
   execSync('bun run --cwd apps/web build', { cwd: root, stdio: 'inherit' })

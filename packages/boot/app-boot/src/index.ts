@@ -572,7 +572,7 @@ function anchorInsertedPluginNames(patches: PatchOptions[], file: string): Patch
  * @param label - what to call this list in errors (`patches`, `overlay`).
  * @returns the parsed patch list.
  */
-function parsePatchList(
+export function parsePatchList(
   binName: string, file: string, content: string, label: string,
 ): PatchOptions[] {
   let parsed: unknown

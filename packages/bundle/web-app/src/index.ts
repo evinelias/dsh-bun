@@ -135,13 +135,16 @@ function resolveDistIndex(): string {
   const cwd = process.cwd()
 
   candidates.push(
+    join(execDir, 'binaries', 'web-dist', 'index.html'),
     join(execDir, 'web-dist', 'index.html'),
     join(execDir, 'dist', 'index.html'),
+    join(execDir, '..', 'binaries', 'web-dist', 'index.html'),
     join(execDir, '..', 'web-dist', 'index.html'),
     join(execDir, '..', 'Resources', 'web-dist', 'index.html'),
     join(execDir, 'apps', 'web', 'dist', 'index.html'),
     join(execDir, '..', 'apps', 'web', 'dist', 'index.html'),
     join(cwd, 'apps', 'web', 'dist', 'index.html'),
+    join(cwd, 'binaries', 'web-dist', 'index.html'),
     join(cwd, 'web-dist', 'index.html'),
     join(cwd, 'dist', 'index.html'),
   )
@@ -173,7 +176,7 @@ function spawnBrowserLauncher(url: string): ChildProcess {
 
 /** Hand one URL to the operating system's default browser. */
 async function openBrowser(url: string): Promise<void> {
-  if (!BROWSER_OPENER_MODULE || (process as any).isBun) {
+  if (!BROWSER_OPENER_MODULE || Boolean((process as unknown as { isBun?: boolean }).isBun) || typeof Bun !== 'undefined') {
     if (process.platform === 'win32') {
       spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref()
     } else if (process.platform === 'darwin') {

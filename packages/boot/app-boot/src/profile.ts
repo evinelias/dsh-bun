@@ -30,8 +30,9 @@ import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import type { DshBundleManifest, DshPackageManifest } from '@deepseek-ai/dsh-package-manifest'
 import { evaluatePluginCompatibility, pluginCompatibilityWarning } from './plugin-compatibility.ts'
 import { readProfileVersionExemptions } from './profile-compatibility.ts'
-import { loadOverlayPatches } from './index.ts'
+import { loadOverlayPatches, parsePatchList } from './index.ts'
 import { realModuleDirectory } from './profile-resolution/legacy-links.ts'
+import { BUILTIN_BUNDLES } from './builtin-bundles.ts'
 
 /** Directory under the Harness home holding every profile. */
 export const PROFILES_DIR = 'profiles'
@@ -387,8 +388,21 @@ function collectInstallationScopePackages(
   versions: ReadonlyMap<string, string | undefined>
 } {
   // Real declaring paths keep workspace symlinks under node_modules from disabling tsx path mappings.
-  const canonicalAnchor = join(realModuleDirectory(dirname(installAnchor)), basename(installAnchor))
-  const appManifest = readPackageManifest(canonicalAnchor)
+  let canonicalAnchor: string
+  try {
+    canonicalAnchor = join(realModuleDirectory(dirname(installAnchor)), basename(installAnchor))
+    if (!existsSync(canonicalAnchor)) {
+      return { packageNames: new Set(), packageDirs: new Map(), declarers: new Map(), versions: new Map() }
+    }
+  } catch {
+    return { packageNames: new Set(), packageDirs: new Map(), declarers: new Map(), versions: new Map() }
+  }
+  let appManifest: ProfileManifest
+  try {
+    appManifest = readPackageManifest(canonicalAnchor)
+  } catch {
+    return { packageNames: new Set(), packageDirs: new Map(), declarers: new Map(), versions: new Map() }
+  }
   const links = new Map<string, string>()
   const declarers = new Map<string, string>()
   const versions = new Map<string, string | undefined>()
@@ -556,8 +570,20 @@ function dependencyClosure(
   const links = new Map<string, string>()
   const visited = new Set(reserved)
   for (const anchor of anchors) {
-    const canonicalAnchor = join(realModuleDirectory(dirname(anchor)), basename(anchor))
-    const manifest = readPackageManifest(canonicalAnchor)
+    if (!anchor || anchor.startsWith('builtin:')) continue
+    let canonicalAnchor: string
+    try {
+      canonicalAnchor = join(realModuleDirectory(dirname(anchor)), basename(anchor))
+      if (!existsSync(canonicalAnchor)) continue
+    } catch {
+      continue
+    }
+    let manifest: ProfileManifest
+    try {
+      manifest = readPackageManifest(canonicalAnchor)
+    } catch {
+      continue
+    }
     /* v8 ignore next -- an installable package manifest always declares its name */
     if (manifest.name === undefined) continue
     if (!visited.has(manifest.name)) {
@@ -579,7 +605,12 @@ function dependencyClosure(
         links.set(dep, dir)
         declarers?.set(dep, next.anchor)
         const manifestPath = join(realModuleDirectory(dir), 'package.json')
-        const dependencyManifest = readPackageManifest(manifestPath)
+        let dependencyManifest: ProfileManifest
+        try {
+          dependencyManifest = readPackageManifest(manifestPath)
+        } catch {
+          continue
+        }
         versions?.set(dep, dependencyManifest.version)
         queue.push({ anchor: manifestPath, manifest: dependencyManifest })
       }
@@ -595,7 +626,7 @@ function collectProfileScopePackages(
   versions?: Map<string, string | undefined>,
 ): Map<string, string> {
   const bundleAnchors = profile.layers
-    .filter(layer => !installationPackageNames.has(layer.packageName))
+    .filter(layer => !installationPackageNames.has(layer.packageName) && !layer.packageDir.startsWith('builtin:'))
     .map(layer => join(layer.packageDir, 'package.json'))
   const bundleLinks = dependencyClosure(bundleAnchors, installationPackageNames, declarers, versions)
   for (const layer of profile.layers) bundleLinks.delete(layer.packageName)
@@ -715,8 +746,13 @@ export function resolveBundleDir(
   binName: string, packageName: string, installAnchor: string, profileDir: string,
 ): string {
   for (const anchor of [installAnchor, join(profileDir, 'package.json')]) {
-    const dir = packageDirFromAnchor(anchor, packageName)
-    if (dir !== undefined) return dir
+    try {
+      const dir = packageDirFromAnchor(anchor, packageName)
+      if (dir !== undefined) return dir
+    } catch {}
+  }
+  if (BUILTIN_BUNDLES[packageName]) {
+    return 'builtin:' + packageName
   }
   throw new Error(
     `${binName}: cannot resolve profile bundle ${JSON.stringify(packageName)} from the dsh installation or ${profileDir}; `
@@ -751,6 +787,15 @@ export function loadProfileDirectory(
   for (const packageName of bundles) {
     try {
       const packageDir = resolveBundleDir(binName, packageName, installAnchor, dir)
+      if (packageDir.startsWith('builtin:')) {
+        const builtin = BUILTIN_BUNDLES[packageName]
+        if (builtin) {
+          const patchPaths = builtin.patches.map(p => p.file)
+          const patches = builtin.patches.flatMap(p => parsePatchList(binName, p.file, p.content, 'overlay'))
+          layers.push({ packageName, packageDir, patchPaths, patches })
+          continue
+        }
+      }
       const bundleManifest = readProfileManifest(binName, packageDir)
       const bundle = bundleManifest.dsh?.bundle
       if (bundle === undefined) {
