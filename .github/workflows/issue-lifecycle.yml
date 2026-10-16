@@ -32,11 +32,11 @@ concurrency:
 
 jobs:
   lifecycle:
-    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: Issue lifecycle
     if: >-
-      (github.event_name != 'pull_request_review' || github.event.review.state == 'changes_requested') &&
-      (github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.body != null)
+      github.repository == 'deepseek-ai/deepseek-harness' &&
+      ((github.event_name != 'pull_request_review' || github.event.review.state == 'changes_requested') &&
+      (github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.body != null))
     runs-on: ubuntu-latest
     steps:
       - name: Check out trusted policy

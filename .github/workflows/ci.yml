@@ -726,7 +726,6 @@ jobs:
   # An explicit status function runs the verdict after failed/skipped needs
   # without keeping a cancelled workflow alive for an obsolete verdict.
   all-checks-passed:
-    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: all checks passed
     # This bookkeeping-only verdict must not depend on custom-pool
     # provisioning — and under Linux failover it follows the same selector as
@@ -744,7 +743,7 @@ jobs:
           && fromJSON('["self-hosted", "linux", "x64", "vm-backup"]')
           || 'ubuntu-latest' }}
     needs: [node-24, node-24-coverage, node-24-bench, node-24-consumers, node-compat, python-sdk, python-runtime, windows-build, windows-native-tests]
-    if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+    if: ${{ github.repository == 'deepseek-ai/deepseek-harness' && !cancelled() && github.event_name == 'pull_request' }}
     steps:
       - name: Fail if any needed job did not succeed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
