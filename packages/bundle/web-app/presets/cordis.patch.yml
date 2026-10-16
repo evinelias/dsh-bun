@@ -122,8 +122,7 @@
           - id: skill-filesystem
             name: '@deepseek-ai/dsh-skill-filesystem'
             config:
-              customSkillDirs:
-                - !!js process.getBuiltinModule('node:path').join(process.getBuiltinModule('node:path').dirname(process.getBuiltinModule('node:module').createRequire(baseUrl).resolve('@deepseek-ai/dsh-agent-preset/package.json')), 'skills')
+              customSkillDirs: !!js (() => { const path = process.getBuiltinModule('node:path'), fs = process.getBuiltinModule('node:fs'), mod = process.getBuiltinModule('node:module'); const tryReq = (b) => { try { return mod.createRequire(b).resolve('@deepseek-ai/dsh-agent-preset/package.json'); } catch {} }; const found = tryReq(baseUrl) || tryReq(path.join(process.cwd(), 'noop.js')) || tryReq(process.execPath); if (found) return [path.join(path.dirname(found), 'skills')]; for (const base of [process.cwd(), path.dirname(process.execPath)]) { for (const sub of ['packages/preset/agent-preset/skills', 'node_modules/@deepseek-ai/dsh-agent-preset/skills']) { const c = path.join(base, sub); if (fs.existsSync(c)) return [c]; } } return []; })()
           - id: tool-skill
             name: '@deepseek-ai/dsh-tool-skill'
           - id: present

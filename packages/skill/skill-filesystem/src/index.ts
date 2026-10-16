@@ -165,7 +165,7 @@ export class FileSystemSkillProvider implements SkillProvider {
     this.includeDefaultRoots = config.includeDefaultRoots ?? true
     this.dshHome = resolveDshHome(config.dshHome)
     this.agentsHome = resolveAgentsHome(config.agentsHome)
-    this.customSkillDirs = (config.customSkillDirs ?? []).map(root => resolve(root))
+    this.customSkillDirs = (config.customSkillDirs ?? []).filter(Boolean).map(root => resolve(root))
     this.watchManager = new SkillWatchManager(ctx, control.invalidate, resolveWatchConfig(config))
     control.signal.addEventListener('abort', () => { void this.dispose() }, { once: true })
     // The environment bundled root is a default root: an isolated provider
