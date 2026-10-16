@@ -31,6 +31,9 @@ jobs:
       - name: Verify Kernel, Plugins & Subsystems Suite
         run: bun run test:plugins
 
+      - name: Build Web UI Frontend
+        run: bun run build:web
+
       - name: Compile Standalone CLI Binary
         run: bun run build:binary
 
