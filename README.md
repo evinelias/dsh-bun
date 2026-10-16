@@ -1,12 +1,35 @@
 # DeepSeek Harness (Bun + Elysia + Tauri v2 Edition)
 
-> ⚡ **A high-performance, native distribution of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`deepseek-ai/deepseek-harness`) running 100% natively on Bun, Elysia, and Tauri v2.**  
-> Completely eliminates Node.js, pnpm, and Electron while preserving the upstream **Cordis** kernel, official Web UI, and 100% of the plugin ecosystem.
+> ⚡ **A high-performance, native distribution of [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`deepseek-ai/deepseek-harness`) running natively on Bun, Elysia, and Tauri v2.**<br>
+> Completely eliminates Node.js, pnpm, and Electron while preserving the upstream **Cordis** kernel, official Web UI, and plugin ecosystem compatibility.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Bun](https://img.shields.io/badge/Bun-v1.3.5-black?logo=bun)](https://bun.sh)
+[![Bun](https://img.shields.io/badge/Bun->=1.3.14-black?logo=bun)](https://bun.sh)
 [![Elysia](https://img.shields.io/badge/Elysia-v1.4-blueviolet)](https://elysiajs.com)
 [![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?logo=tauri)](https://v2.tauri.app)
+
+---
+
+## 📋 System & Tooling Prerequisites
+
+| Audience | Target | Prerequisite | Notes |
+| :--- | :--- | :--- | :--- |
+| **End-User (Desktop / Binary)** | Standalone App / CLI | **None** | Zero external Node.js, Bun, or pnpm required |
+| **Contributor / Developer** | Source Build & CI | **Bun >= 1.3.14** | Tested on `Bun 1.3.x` / `latest` across Linux, macOS, Windows |
+| **Desktop Shell Packager** | Tauri v2 Installer | **Rust >= 1.75** | Optional; only needed to compile the Tauri native shell |
+
+---
+
+## 🛠️ Bun Compatibility Engineering
+
+`dsh-bun` addresses the exact failure modes that prevent standard upstream DSH from executing under Bun:
+
+| Subsystem / Issue | Upstream Failure Mode Under Bun | `dsh-bun` Solution |
+| :--- | :--- | :--- |
+| **`node:module.stripTypeScriptTypes`** | Node 22 API missing in Bun; crashes worker thread | Replaced in `ptc-runtime-node` with native `new Bun.Transpiler({ loader: 'ts' })` |
+| **JSC `[native code]` & Decorators** | JavaScriptCore method signatures break parameter reflection | Patched parameter parsing in `json-wire.ts`, `json-schema.ts`, `packages/api/gateway`, and `vendor/cordis` |
+| **Virtual FS & Node HMR Hooks** | Compiled binary virtual path (`B:\~BUN` / `/$bunfs`) causes ENOENT on Node hooks | Guarded in `packages/boot/hmr`, `packages/boot/app-boot`, and `packages/boot/plugin-manager` with anchor verification |
+| **Subprocess / PTY Execution** | Direct reliance on `koffi` C++ addon fails in compiled binaries | Migrated to native `bun:ffi` (`kernel32.dll`, `advapi32.dll`) with safe process fallbacks (`process.kill(pid, 0)`) and modern `IFileOpenDialog` |
 
 ---
 
@@ -14,7 +37,7 @@
 
 | Upstream Component | Upstream Architecture | DSH Bun Edition | Advantages |
 | :--- | :--- | :--- | :--- |
-| **JavaScript Runtime** | Node.js (v20+) | **Bun** (v1.3+) | Instant startup, native TS/JSX execution, zero transpilation build step needed during development. |
+| **JavaScript Runtime** | Node.js (v20+) | **Bun** (>= 1.3.14) | Instant startup, native TS/JSX execution, zero transpilation build step needed during development. |
 | **Package Manager** | `pnpm` (pnpm-workspace) | **Bun Workspaces** | Clean, fast monorepo workspace management with a unified lockfile and instant package resolution. |
 | **Web & WS Server** | Node `node:http` + WS | **Elysia on Bun** | High-throughput HTTP & WebSockets mapped seamlessly to Cordis `ctx.webServer` with socket upgrade bridge. |
 | **CLI & Runtime Distribution** | Multi-file Node script + external `node_modules` | **Single Standalone Binary (`dsh-bun`)** | 2,882 modules and 231 core plugins compiled into a single executable via `bun build --compile`. |
@@ -84,8 +107,8 @@ To prevent breaking upstream plugins that expect a traditional Node `http.Server
 ## 🌟 Upstream Fidelity & Compatibility
 
 1. **Unbroken Cordis Kernel:** All Cordis services, context scopes (`ctx`), event buses, and plugin life-cycle hooks operate exactly as upstream designed.
-2. **100% Official Web UI:** The production frontend (`apps/web`) is bundled directly alongside the binary, supporting hot-reload in dev and seamless embedded serving in production.
-3. **Plugin Ecosystem Ready:** Official and community `dsh-plugin` packages install and run without code modifications.
+2. **Official Web UI:** The production frontend (`apps/web`) is bundled directly alongside the binary, supporting hot-reload in dev and seamless embedded serving in production.
+3. **Plugin Compatibility:** Designed for upstream Cordis plugin compatibility, verified against official core plugins and representative community plugin surfaces (see [`docs/PLUGIN_COMPATIBILITY.md`](./docs/PLUGIN_COMPATIBILITY.md)).
 
 ---
 
@@ -93,8 +116,8 @@ To prevent breaking upstream plugins that expect a traditional Node `http.Server
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) (v1.2+)
-- (Optional for Desktop Shell build) [Rust](https://rustup.rs) (v1.75+) and Tauri v2 prerequisites
+- [Bun](https://bun.sh) (>= 1.3.14)
+- (Optional for Desktop Shell build) [Rust](https://rustup.rs) (>= 1.75) and Tauri v2 prerequisites
 
 ### 1. Installation
 

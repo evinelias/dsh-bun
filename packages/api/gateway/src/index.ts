@@ -1584,7 +1584,42 @@ function methodParameterNames(service: object, method: string, endpoint: string)
     )
   }
   const source = Function.prototype.toString.call(implementation)
-  const clean = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g, '')
+  let clean = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g, '').trim()
+  const firstBracket = clean.indexOf('[')
+  const firstParen = clean.indexOf('(')
+  if (firstBracket !== -1 && (firstParen === -1 || firstBracket < firstParen)) {
+    let depth = 0
+    let inString: string | null = null
+    let escaped = false
+    let i = firstBracket
+    for (; i < clean.length; i++) {
+      const ch = clean[i]
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (ch === '\\') {
+        escaped = true
+        continue
+      }
+      if (inString !== null) {
+        if (ch === inString) inString = null
+        continue
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        inString = ch
+        continue
+      }
+      if (ch === '[') depth++
+      else if (ch === ']') {
+        depth--
+        if (depth === 0) {
+          clean = clean.slice(i + 1).trim()
+          break
+        }
+      }
+    }
+  }
   const bodyIdx = clean.indexOf('{')
   const header = bodyIdx >= 0 ? clean.slice(0, bodyIdx) : clean
   const close = header.lastIndexOf(')')

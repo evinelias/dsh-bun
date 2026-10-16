@@ -60,7 +60,7 @@ Keep this log exhaustive — every divergence from upstream must be listed.
 
 24. **`timer/locale/{en,zh}.json` display metadata**: local English and Chinese titles and descriptions for the Settings plugin inventory. `timer/package.json` exports and publishes these locale resources.
 
-25. **`loader/src/config/tree.ts` profile plugin resolution**: added `this.ctx.baseUrl` and profile directory ancestors to `candidateRoots` in `EntryTree.import()` fallback resolution, allowing profile-installed plugins to be dynamically resolved and imported under Bun/standalone runtimes.
+25. **`loader/src/config/tree.ts` profile plugin resolution**: added `$DSH_HOME`, profile directories (`profiles/*`), `this.ctx.baseUrl`, and ancestor directories to `candidateRoots` in `EntryTree.import()` fallback resolution, and added support for `exports['.'].default` entrypoints, allowing community and profile-installed plugins (such as `dshmarket`) to be dynamically resolved and imported under Bun standalone runtimes.
 
 ## Sync procedure
 

@@ -28,6 +28,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createRequire } from 'node:module'
+import { homedir } from 'node:os'
 import { dirname, isAbsolute, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { Service } from '@deepseek-ai/cordis'
@@ -932,12 +933,15 @@ export class ClientModuleRegistry extends Service {
           : isAbsolute(loaderName) ? pathToFileURL(loaderName).href : new URL(loaderName, baseUrl).href
         return this.nearestPackage(moduleUrl)
       }
+      const dshHome = process.env.DSH_HOME || join(homedir(), '.dsh')
       const baseCandidates = [
         baseUrl,
         join(process.cwd(), 'package.json'),
         import.meta.url,
         join(dirname(process.execPath), 'package.json'),
         join(dirname(process.execPath), '..', 'package.json'),
+        join(dshHome, 'package.json'),
+        join(dshHome, 'profiles', 'web', 'package.json'),
       ]
       for (const base of baseCandidates) {
         try {

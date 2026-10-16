@@ -19,6 +19,8 @@
     "build:binary": "bun scripts/generate-typert.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun",
     "build:sidecar": "bun scripts/build-sidecar.ts",
     "build:web": "bun run --cwd apps/web build",
+    "test:plugins": "bun scripts/verify-plugins.ts",
+    "test:clean-binary": "bun scripts/verify-clean-binary.ts",
     "check:desktop": "bun scripts/check-desktop.ts",
     "sync:upstream": "bun scripts/sync-upstream.ts",
     "prepare:primary-runtime": "bun scripts/primary-runtime/prepare.ts",

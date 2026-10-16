@@ -134,9 +134,24 @@ export abstract class EntryTree {
             const fs = await import('node:fs')
             const path = await import('node:path')
             const url = await import('node:url')
+            const os = await import('node:os')
             const cwd = process.cwd()
             const execDir = path.dirname(process.execPath)
             const candidateRoots = new Set<string>()
+
+            // 1. DSH Home & Profile directories ($DSH_HOME, ~/.dsh, ~/.dsh/profiles/*)
+            const dshHome = process.env.DSH_HOME || path.join(os.homedir(), '.dsh')
+            candidateRoots.add(dshHome)
+            const profilesDir = path.join(dshHome, 'profiles')
+            if (fs.existsSync(profilesDir)) {
+              try {
+                const profiles = fs.readdirSync(profilesDir)
+                for (const prof of profiles) {
+                  candidateRoots.add(path.join(profilesDir, prof))
+                }
+              } catch {}
+            }
+
             if (this.ctx.baseUrl) {
               try {
                 const baseDir = this.ctx.baseUrl.startsWith('file:') ? url.fileURLToPath(this.ctx.baseUrl) : this.ctx.baseUrl
@@ -170,11 +185,14 @@ export abstract class EntryTree {
                 if (fs.existsSync(pkgJsonPath)) {
                   const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'))
                   const entry = (typeof pkg.exports === 'object' && pkg.exports?.['.']?.bun)
-                    || pkg.bun
                     || (typeof pkg.exports === 'object' && pkg.exports?.['.']?.import)
+                    || (typeof pkg.exports === 'object' && pkg.exports?.['.']?.default)
+                    || (typeof pkg.exports?.['.'] === 'string' && pkg.exports['.'])
+                    || pkg.bun
                     || (typeof pkg.exports === 'string' && pkg.exports)
                     || pkg.module
                     || pkg.main
+                    || './lib/index.js'
                     || './src/index.ts'
                   const target = path.resolve(candidate, entry)
                   if (fs.existsSync(target)) {

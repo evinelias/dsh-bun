@@ -9,9 +9,13 @@ permissions:
   contents: read
 
 jobs:
-  bun-ci:
-    name: Bun Monorepo CI & Boot Verification
-    runs-on: ubuntu-latest
+  verification-matrix:
+    name: Verification Suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,14 +28,11 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Generate Typert Artifacts
-        run: bun scripts/generate-typert.ts
-
-      - name: Verify Kernel & Elysia Boot
-        run: bun run scripts/test-boot.ts
+      - name: Verify Kernel, Plugins & Subsystems Suite
+        run: bun run test:plugins
 
       - name: Compile Standalone CLI Binary
         run: bun run build:binary
 
-      - name: Verify Compiled Binary Execution
-        run: ./dist/dsh-bun --help
+      - name: Verify Clean-Machine Standalone Binary (10-Step E2E)
+        run: bun run test:clean-binary

@@ -270,7 +270,9 @@ export function initProfile(
     const manifest: ProfileManifest & { private: boolean } = {
       name: `dsh-profile-${basename(dir)}`,
       private: true,
-      dependencies: {},
+      dependencies: {
+        '@deepseek-ai/schemastery': '^3.18.4',
+      },
       dsh: { profile: { bundles: [...bundles] } },
     }
     writeFileSync(manifestPath, JSON.stringify(manifest, undefined, 2) + '\n')
