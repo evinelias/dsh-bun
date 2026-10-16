@@ -21,6 +21,7 @@
     },
     "./package.json": "./package.json",
     "./process": {
+      "bun": "./src/process.ts",
       "types": "./lib/types/process-entry.d.ts",
       "default": "./lib/process.js"
     },

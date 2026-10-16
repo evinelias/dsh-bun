@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
@@ -28,6 +29,7 @@
       "default": "./lib/client.js"
     },
     "./default-workspace": {
+      "bun": "./src/default-workspace.ts",
       "types": "./lib/types/default-workspace.d.ts",
       "default": "./lib/types/default-workspace.js"
     },

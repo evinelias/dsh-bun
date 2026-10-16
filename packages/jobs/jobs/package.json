@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./brand": {
+      "bun": "./src/brand.ts",
       "types": "./lib/types/brand.d.ts",
       "default": "./lib/types/brand.js"
     },
     "./view": {
+      "bun": "./src/view.ts",
       "types": "./lib/types/view.d.ts",
       "default": "./lib/types/view.js"
     },

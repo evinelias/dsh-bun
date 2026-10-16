@@ -164,6 +164,7 @@
   },
   "exports": {
     "./profile-boot": {
+      "bun": "./src/profile-boot.ts",
       "types": "./lib/types/profile-boot.d.ts",
       "default": "./lib/profile-boot.js"
     },

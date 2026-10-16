@@ -17,6 +17,7 @@ env:
 
 jobs:
   expected-filenames:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: no golden filenames
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith' && 'blacksmith-4vcpu-ubuntu-2404'

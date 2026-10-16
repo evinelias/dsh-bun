@@ -20,18 +20,22 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./brand": {
+      "bun": "./src/brand.ts",
       "types": "./lib/types/brand.d.ts",
       "default": "./lib/types/brand.js"
     },
     "./message": {
+      "bun": "./src/message.ts",
       "types": "./lib/types/message.d.ts",
       "default": "./lib/types/message.js"
     },
     "./assistant-stream": {
+      "bun": "./src/assistant-stream.ts",
       "types": "./lib/types/assistant-stream.d.ts",
       "default": "./lib/types/assistant-stream.js"
     },

@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./notice": {
+      "bun": "./src/notice.ts",
       "types": "./lib/types/notice.d.ts",
       "default": "./lib/types/notice.js"
     },

@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./grammar": {
+      "bun": "./src/grammar.ts",
       "types": "./lib/types/grammar.d.ts",
       "default": "./lib/types/grammar.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },

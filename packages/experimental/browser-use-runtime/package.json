@@ -22,6 +22,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./mcp": {
+      "bun": "./src/mcp.ts",
       "types": "./lib/types/mcp.d.ts",
       "default": "./lib/types/mcp.js"
     }

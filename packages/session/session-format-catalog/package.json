@@ -22,6 +22,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./message-projections": {
+      "bun": "./src/message-projections.ts",
       "types": "./lib/types/message-projections.d.ts",
       "default": "./lib/types/message-projections.js"
     }

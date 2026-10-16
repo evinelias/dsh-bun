@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./runner": {
+      "bun": "./src/runner.ts",
       "types": "./lib/types/runner.d.ts",
       "default": "./lib/runner.js"
     },

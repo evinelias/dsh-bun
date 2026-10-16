@@ -22,6 +22,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./injections": {
+      "bun": "./src/apply-injections.ts",
       "types": "./lib/types/apply-injections.d.ts",
       "default": "./lib/apply-injections.js"
     }

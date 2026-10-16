@@ -22,14 +22,17 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./helper": {
+      "bun": "./src/helper.ts",
       "types": "./lib/types/helper-entry.d.ts",
       "default": "./lib/helper.js"
     },
     "./protocol": {
+      "bun": "./src/protocol.ts",
       "types": "./lib/types/protocol.d.ts",
       "default": "./lib/protocol.js"
     },
     "./schemas": {
+      "bun": "./src/schemas.ts",
       "types": "./lib/types/schemas.d.ts",
       "default": "./lib/schemas.js"
     }

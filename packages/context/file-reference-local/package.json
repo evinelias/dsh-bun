@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./search": {
+      "bun": "./src/search.ts",
       "types": "./lib/types/search.d.ts",
       "default": "./lib/types/search.js"
     },

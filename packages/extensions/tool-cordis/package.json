@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./host": {
+      "bun": "./src/host.ts",
       "types": "./lib/types/host.d.ts",
       "default": "./lib/types/host.js"
     },

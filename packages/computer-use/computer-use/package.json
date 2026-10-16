@@ -22,6 +22,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./brand": {
+      "bun": "./src/brand.ts",
       "types": "./lib/types/brand.d.ts",
       "default": "./lib/types/brand.js"
     }

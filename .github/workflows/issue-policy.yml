@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   policy:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: Issue policy
     runs-on: ubuntu-latest
     steps:

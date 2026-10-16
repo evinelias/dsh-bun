@@ -22,18 +22,22 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./api": {
+      "bun": "./src/api.ts",
       "types": "./lib/types/api.d.ts",
       "default": "./lib/api.js"
     },
     "./bridge": {
+      "bun": "./src/bridge.ts",
       "types": "./lib/types/bridge.d.ts",
       "default": "./lib/bridge.js"
     },
     "./native-client": {
+      "bun": "./src/native-client.ts",
       "types": "./lib/types/native-client.d.ts",
       "default": "./lib/native-client.js"
     },
     "./protocol": {
+      "bun": "./src/protocol.ts",
       "types": "./lib/types/protocol.d.ts",
       "default": "./lib/protocol.js"
     }

@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./tsdown": {
+      "bun": "./src/tsdown-plugin.ts",
       "types": "./lib/types/tsdown-plugin.d.ts",
       "default": "./lib/types/tsdown-plugin.js"
     },

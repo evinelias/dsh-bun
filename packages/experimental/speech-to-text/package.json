@@ -23,10 +23,12 @@
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./wave": {
+      "bun": "./src/wave.ts",
       "types": "./lib/types/wave.d.ts",
       "default": "./lib/types/wave.js"
     }

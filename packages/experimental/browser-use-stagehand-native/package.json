@@ -22,6 +22,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./worker": {
+      "bun": "./src/worker.ts",
       "types": "./lib/types/worker.d.ts",
       "default": "./lib/worker.js"
     }

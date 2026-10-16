@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./checkpoint": {
+      "bun": "./src/checkpoint.ts",
       "types": "./lib/types/checkpoint.d.ts",
       "default": "./lib/types/checkpoint.js"
     },

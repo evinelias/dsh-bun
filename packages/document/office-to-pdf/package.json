@@ -23,6 +23,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },

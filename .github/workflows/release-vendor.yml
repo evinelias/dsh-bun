@@ -28,6 +28,7 @@ env:
 
 jobs:
   pack:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: Pack npm tarballs
     # Persistent runners accept only trusted, credential-free rehearsals.
     runs-on: >-

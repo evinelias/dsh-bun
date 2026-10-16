@@ -41,6 +41,7 @@ jobs:
   # e2e.yml's key preflight guards against. Each leg therefore asserts BOTH
   # its platform files actually ran: `Test Files  2 passed (2)`, no skips.
   sandbox-e2e:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     strategy:
       fail-fast: false
       matrix:
@@ -142,6 +143,7 @@ jobs:
   # takes 16 minutes on a fast macos-latest runner and was under half done at
   # 20 on the slowest observed.
   unit-darwin:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: unit tests (darwin parity, macos-latest)
     runs-on: macos-latest
     timeout-minutes: 60

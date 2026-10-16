@@ -32,7 +32,7 @@ env:
 
 jobs:
   ssh-helper:
-    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'ssh-helper'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'workflow_dispatch' && inputs.suite == 'ssh-helper')
     name: ssh helper / native artifacts
     uses: ./.github/workflows/build-exe-for-ssh-helper.yml
     with:
@@ -40,7 +40,7 @@ jobs:
 
   # These native runtime carriers are post-merge checks; release keeps all targets.
   python-runtime:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'push' && github.ref == 'refs/heads/master')
     name: python runtime / macOS and Linux ARM64
     uses: ./.github/workflows/build-exe-for-python-sdk.yml
     with:
@@ -51,7 +51,7 @@ jobs:
 
   # Wine runs once here, independently of the native serial standby aggregates.
   windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'push' && github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     name: windows node 24 / wine
     timeout-minutes: 15
@@ -139,7 +139,7 @@ jobs:
   # persistent pnpm store and tool caches make them redundant (and saving here
   # would poison the hosted cache namespace with self-hosted paths).
   serial-linux-selfhosted:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'push' && github.ref == 'refs/heads/master')
     name: serial / linux (self-hosted standby)
     runs-on: [self-hosted, linux, x64, vm-backup]
     steps:
@@ -195,7 +195,7 @@ jobs:
   # not restore a Linux hosted-cache producer: decide whether to add a master
   # seeder or remove the restore-only steps if cold starts become a concern.
   serial-macos:
-    if: false
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (false)
     name: serial / macos
     runs-on: macos-latest
     steps:
@@ -233,7 +233,7 @@ jobs:
   # (and saving here would poison the hosted cache namespace with self-hosted
   # paths).
   serial-windows:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'push' && github.ref == 'refs/heads/master')
     name: serial / windows (self-hosted standby)
     runs-on: [self-hosted, dsh-win-ci, windows]
     timeout-minutes: 120
@@ -287,7 +287,7 @@ jobs:
   # Manual, bounded comparison of the actual critical Linux and Windows lanes.
   # The named pools are restricted at the organization level to this repository.
   larger-runner-benchmark:
-    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark')
     # Default measures the repository's own fleet tiers; under the matching
     # platform's blacksmith failover value the tiers Blacksmith offers (up to
     # 32 vCPU) move onto their Blacksmith equivalents, while the 64/96-core
@@ -398,7 +398,7 @@ jobs:
   # complete unsharded primary aggregate with bounded in-runner parallelism;
   # Windows runs both blocking build targets concurrently through run-gates.
   consolidated-runner-benchmark:
-    if: github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark')
     # Default measures the repository's own fleet tiers; under the matching
     # platform's blacksmith failover value the tiers Blacksmith offers (up to
     # 32 vCPU) move onto their Blacksmith equivalents, while the 64/96-core

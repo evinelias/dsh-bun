@@ -20,12 +20,14 @@
       "default": "./lib/index.js"
     },
     "./client": {
+      "bun": "./src/client/index.ts",
       "types": "./lib/types/client/index.d.ts",
       "node": "./lib/client.node.js",
       "browser": "./lib/client.browser.js",
       "default": "./lib/client.browser.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },

@@ -21,6 +21,7 @@
     },
     "./package.json": "./package.json",
     "./projection": {
+      "bun": "./src/projection.ts",
       "types": "./lib/types/projection.d.ts",
       "default": "./lib/types/projection.js"
     },

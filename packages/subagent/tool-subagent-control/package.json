@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./list-agents": {
+      "bun": "./src/list-agents.ts",
       "types": "./lib/types/list-agents.d.ts",
       "default": "./lib/types/list-agents.js"
     },

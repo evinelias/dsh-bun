@@ -83,14 +83,7 @@ jobs:
           BUN_TARGET: ${{ matrix.bun_target }}
           EXT: ${{ matrix.ext }}
         run: |
-          # 1. Run your sidecar generator (regenerates builtin-plugins & builds apps/web)
           bun run build:sidecar
-
-          # 2. Explicitly compile for the matrix target (critical when cross-compiling macOS x64 on macos-latest ARM)
-          bun build ./apps/cli/src/bin.ts \
-            --compile \
-            --target=${{ env.BUN_TARGET }} \
-            --outfile ./apps/desktop/src-tauri/binaries/dsh-bun-${{ env.TARGET_TRIPLE }}${{ env.EXT }}
 
       - name: Build Tauri v2 Installers & Upload to GitHub Release
         uses: tauri-apps/tauri-action@v1

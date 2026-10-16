@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./shared": {
+      "bun": "./src/shared.ts",
       "types": "./lib/types/shared.d.ts",
       "default": "./lib/types/shared.js"
     },

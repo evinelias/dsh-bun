@@ -20,16 +20,19 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./fork": {
+      "bun": "./src/fork.ts",
       "types": "./lib/types/fork.d.ts",
       "default": "./lib/types/fork.js"
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./surface": {
+      "bun": "./src/surface.ts",
       "types": "./lib/types/surface.d.ts",
       "default": "./lib/types/surface.js"
     },

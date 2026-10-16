@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./startup": {
+      "bun": "./src/startup.ts",
       "types": "./lib/types/startup.d.ts",
       "default": "./lib/startup.js"
     },

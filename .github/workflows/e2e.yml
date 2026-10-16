@@ -53,6 +53,7 @@ env:
 
 jobs:
   e2e:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith'
           && 'blacksmith-4vcpu-ubuntu-2404' || 'ubuntu-latest' }}

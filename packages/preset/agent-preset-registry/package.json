@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./display": {
+      "bun": "./src/display.ts",
       "types": "./lib/types/display.d.ts",
       "default": "./lib/types/display.js"
     },

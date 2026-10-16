@@ -26,12 +26,14 @@
       "default": "./lib/client.browser.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./stream-protocol": {
+      "bun": "./src/stream-protocol.ts",
       "types": "./lib/types/stream-protocol.d.ts",
       "default": "./lib/types/stream-protocol.js"
     },

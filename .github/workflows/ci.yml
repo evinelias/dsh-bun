@@ -40,7 +40,7 @@ jobs:
   # switch is the separate DSH_CI_FAILOVER_WINDOWS variable on the windows-native
   # job below.
   node-24:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith' && 'blacksmith-8vcpu-ubuntu-2404'
           || vars.DSH_CI_FAILOVER_LINUX == 'selfhosted'
@@ -107,7 +107,7 @@ jobs:
         run: pnpm run check:ci:static
 
   node-24-coverage:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith' && 'blacksmith-16vcpu-ubuntu-2404'
           || vars.DSH_CI_FAILOVER_LINUX == 'selfhosted'
@@ -204,7 +204,7 @@ jobs:
           key: coverage-times-Linux-${{ runner.environment }}-${{ vars.DSH_CI_FAILOVER_LINUX || 'enterprise' }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   node-24-bench:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: ubuntu-24.04
     name: node 24 / benchmarks
     # Wall-clock budgets need an otherwise idle runner, so this job runs the
@@ -264,7 +264,7 @@ jobs:
           retention-days: 7
 
   node-24-consumers:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_LINUX == 'blacksmith' && 'blacksmith-16vcpu-ubuntu-2404'
           || vars.DSH_CI_FAILOVER_LINUX == 'selfhosted'
@@ -391,7 +391,7 @@ jobs:
 
 
   node-compat:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     # Under the selfhosted leg this job admits only repository-owned PR code
     # to the persistent shared VM; the blacksmith branch targets ephemeral
     # runners and carries none of those predicates.
@@ -484,7 +484,7 @@ jobs:
         run: pnpm exec vitest run packages/boot/app-boot/tests/loader-shape.compat.spec.ts
 
   python-sdk:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: ubuntu-latest
     name: python 3.10 / keyless SDK
     steps:
@@ -512,7 +512,7 @@ jobs:
   # keyless black-box, and trusted real-API path. Linux/Windows x64 block PRs;
   # Linux ARM64 and both macOS architectures run in ci-master.yml.
   python-runtime:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     needs: python-sdk
     name: python runtime / release-shaped matrix
     uses: ./.github/workflows/build-exe-for-python-sdk.yml
@@ -529,7 +529,7 @@ jobs:
   # Blacksmith uses 2 vCPU for file-serial native tests and 16 for coverage
   # and the shared build/observational workspace.
   windows-build:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_WINDOWS == 'blacksmith' && 'blacksmith-16vcpu-windows-2025'
           || vars.DSH_CI_FAILOVER_WINDOWS == 'selfhosted'
@@ -591,7 +591,7 @@ jobs:
           $message | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
 
   windows-coverage:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_WINDOWS == 'blacksmith' && 'blacksmith-16vcpu-windows-2025'
           || vars.DSH_CI_FAILOVER_WINDOWS == 'selfhosted'
@@ -669,7 +669,7 @@ jobs:
           key: coverage-times-Windows-${{ runner.environment }}-${{ vars.DSH_CI_FAILOVER_WINDOWS || 'enterprise' }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   windows-native-tests:
-    if: github.event_name == 'pull_request'
+    if: github.repository == 'deepseek-ai/deepseek-harness' && (github.event_name == 'pull_request')
     runs-on: >-
       ${{ vars.DSH_CI_FAILOVER_WINDOWS == 'blacksmith' && 'blacksmith-2vcpu-windows-2025'
           || vars.DSH_CI_FAILOVER_WINDOWS == 'selfhosted'
@@ -726,6 +726,7 @@ jobs:
   # An explicit status function runs the verdict after failed/skipped needs
   # without keeping a cancelled workflow alive for an obsolete verdict.
   all-checks-passed:
+    if: github.repository == 'deepseek-ai/deepseek-harness'
     name: all checks passed
     # This bookkeeping-only verdict must not depend on custom-pool
     # provisioning — and under Linux failover it follows the same selector as

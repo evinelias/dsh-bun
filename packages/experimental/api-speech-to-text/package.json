@@ -23,6 +23,7 @@
     "./package.json": "./package.json",
     "./locale/*.json": "./locale/*.json",
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },

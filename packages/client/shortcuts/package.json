@@ -26,6 +26,7 @@
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./protocol": {
+      "bun": "./src/protocol.ts",
       "types": "./lib/types/protocol.d.ts",
       "default": "./lib/protocol.js"
     },

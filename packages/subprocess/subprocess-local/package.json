@@ -20,12 +20,14 @@
       "default": "./lib/index.js"
     },
     "./runner": {
+      "bun": "./src/bin.ts",
       "types": "./lib/types/bin.d.ts",
       "default": "./lib/runner.js"
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./output": {
+      "bun": "./src/output.ts",
       "types": "./lib/types/output.d.ts",
       "default": "./lib/output.js"
     },

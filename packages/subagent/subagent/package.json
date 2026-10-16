@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./internal": {
+      "bun": "./src/internal.ts",
       "types": "./lib/types/internal.d.ts",
       "default": "./lib/types/internal.js"
     },
     "./client": {
+      "bun": "./src/client.ts",
       "types": "./lib/types/client.d.ts",
       "default": "./lib/types/client.js"
     },

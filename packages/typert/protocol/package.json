@@ -20,10 +20,12 @@
       "default": "./lib/index.js"
     },
     "./types": {
+      "bun": "./src/types.ts",
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     },
     "./remote-info": {
+      "bun": "./src/remote-info.ts",
       "types": "./lib/types/remote-info.d.ts",
       "default": "./lib/types/remote-info.js"
     },

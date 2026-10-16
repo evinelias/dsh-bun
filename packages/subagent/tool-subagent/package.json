@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./model-selection-settings": {
+      "bun": "./src/model-selection-settings.ts",
       "types": "./lib/types/model-selection-settings.d.ts",
       "default": "./lib/model-selection-settings.js"
     },

@@ -20,12 +20,14 @@
       "default": "./lib/index.js"
     },
     "./client": {
+      "bun": "./src/client.ts",
       "types": "./lib/types/client.d.ts",
       "default": "./lib/types/client.js"
     },
     "./src/*": "./src/*",
     "./package.json": "./package.json",
     "./estimate": {
+      "bun": "./src/estimate.ts",
       "types": "./lib/types/estimate.d.ts",
       "default": "./lib/types/estimate.js"
     },
