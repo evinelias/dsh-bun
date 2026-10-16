@@ -15,6 +15,7 @@
     "python/sdk-runtime"
   ],
   "scripts": {
+    "build:client": "bun scripts/build-client-packages.ts",
     "build:binary": "bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun",
     "build:sidecar": "bun scripts/build-sidecar.ts",
     "build:web": "bun run --cwd apps/web build",

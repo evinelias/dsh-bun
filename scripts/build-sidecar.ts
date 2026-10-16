@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process'
-import { cpSync, existsSync, mkdirSync } from 'node:fs'
+import { cpSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 function getTargetTriple(): string {
   if (process.env.TARGET_TRIPLE) {
@@ -45,13 +45,17 @@ async function main() {
   console.log('=== Building DeepSeek Harness Web UI & Tauri v2 Sidecar ===')
   const root = resolve(import.meta.dir, '..')
 
-  // 1. Build apps/web
-  console.log('[1/4] Building Web UI frontend (apps/web)...')
+  // 1. Build client plugin packages
+  console.log('[1/5] Building client packages (78 plugins)...')
+  execSync('bun scripts/build-client-packages.ts', { cwd: root, stdio: 'inherit' })
+
+  // 2. Build apps/web
+  console.log('[2/5] Building Web UI frontend (apps/web)...')
   execSync('bun run --cwd apps/web build', { cwd: root, stdio: 'inherit' })
 
-  // 2. Resolve target triple
+  // 3. Resolve target triple
   const triple = getTargetTriple()
-  console.log(`[2/4] Detected target triple: ${triple}`)
+  console.log(`[3/5] Detected target triple: ${triple}`)
 
   const isWindows = triple.includes('windows')
   const ext = (process.env.EXT !== undefined && process.env.EXT !== '')
@@ -62,9 +66,9 @@ async function main() {
   mkdirSync(binariesDir, { recursive: true })
   const sidecarPath = join(binariesDir, sidecarName)
 
-  // 3. Compile standalone sidecar binary
+  // 4. Compile standalone sidecar binary
   const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
-  console.log(`[3/4] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
+  console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
   execSync(`bun build apps/cli/src/bin.ts --compile ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
     stdio: 'inherit',
@@ -76,8 +80,8 @@ async function main() {
   const distPath = join(distDir, `dsh-bun${ext}`)
   cpSync(sidecarPath, distPath)
 
-  // 4. Copy web-dist adjacent to binaries so the sidecar is 100% self-contained
-  console.log('[4/4] Bundling web-dist assets adjacent to binaries...')
+  // 5. Copy web-dist adjacent to binaries so the sidecar is 100% self-contained
+  console.log('[5/5] Bundling web-dist assets adjacent to binaries...')
   const webDistSrc = join(root, 'apps', 'web', 'dist')
   const sidecarWebDist = join(binariesDir, 'web-dist')
   const distWebDist = join(distDir, 'web-dist')

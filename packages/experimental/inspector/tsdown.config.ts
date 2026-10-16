@@ -3,8 +3,15 @@ import { clientBundle } from '../../client/tsdown.client.ts'
 import { profileWorkerBanner } from '../../tsdown.worker.ts'
 import { buildDevtools } from './scripts/build-devtools.ts'
 
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
+
+const workerEntry = existsSync(join(import.meta.dirname, 'lib/types/worker/entry.js'))
+  ? 'lib/types/worker/entry.js'
+  : 'src/worker/entry.ts'
+
 const worker: UserConfig = {
-  entry: { worker: 'lib/types/worker/entry.js' },
+  entry: { worker: workerEntry },
   outDir: 'lib',
   format: ['esm'],
   banner: profileWorkerBanner('esm'),

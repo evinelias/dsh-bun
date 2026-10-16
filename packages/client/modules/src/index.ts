@@ -905,16 +905,22 @@ export class ClientModuleRegistry extends Service {
           : isAbsolute(loaderName) ? pathToFileURL(loaderName).href : new URL(loaderName, baseUrl).href
         return this.nearestPackage(moduleUrl)
       }
-      try {
-        return {
-          path: createRequire(baseUrl).resolve(`${expectedPackageName}/package.json`),
-          packageName: expectedPackageName,
-        }
-      } catch {
-        // Without Node internals the owning tree is the only resolver; an
-        // unresolvable name is classified exactly as below.
-        return undefined
+      const baseCandidates = [
+        baseUrl,
+        join(process.cwd(), 'package.json'),
+        import.meta.url,
+        join(dirname(process.execPath), 'package.json'),
+        join(dirname(process.execPath), '..', 'package.json'),
+      ]
+      for (const base of baseCandidates) {
+        try {
+          return {
+            path: createRequire(base).resolve(`${expectedPackageName}/package.json`),
+            packageName: expectedPackageName,
+          }
+        } catch {}
       }
+      return undefined
     }
     let moduleUrl: string
     try {
