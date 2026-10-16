@@ -1585,11 +1585,13 @@ function methodParameterNames(service: object, method: string, endpoint: string)
   }
   const source = Function.prototype.toString.call(implementation)
   const clean = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g, '')
-  const open = clean.indexOf('(')
-  const close = clean.indexOf(')', open + 1)
+  const bodyIdx = clean.indexOf('{')
+  const header = bodyIdx >= 0 ? clean.slice(0, bodyIdx) : clean
+  const close = header.lastIndexOf(')')
+  const open = close >= 0 ? header.lastIndexOf('(', close) : -1
   /* v8 ignore next -- standard public class-method syntax always contains a parenthesized parameter list. */
   if (open < 0 || close < 0) return invalidSignature(endpoint, method, source)
-  const body = clean.slice(open + 1, close).trim()
+  const body = header.slice(open + 1, close).trim()
   if (body.length === 0) return []
   const parts = body.split(',').map(part => part.trim()).filter(Boolean)
   const names = new Set<string>()
