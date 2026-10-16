@@ -99,13 +99,26 @@ export async function pickNativeDirectory(
   }
 
   if (platform === 'win32') {
-    // The koffi-backed IFileOpenDialog child process — the modern picker with
-    // per-monitor-v2 DPI and abort support. koffi is a packaged dependency
-    // whose availability the install guarantees, so there is no fallback
-    // tier: any failure surfaces as-is (no PowerShell fallback tier; see
-    // .agents/notes/archived/simplification/2026-08-04-drop-windows-powershell-picker-fallback.md).
     const pickDialog = internals.pickWin32Dialog ?? pickWin32Directory
-    return await pickDialog(signal)
+    try {
+      return await pickDialog(signal)
+    } catch (err: unknown) {
+      rethrowIfAborted(signal, err)
+      try {
+        const psCommand = [
+          'Add-Type -AssemblyName System.Windows.Forms',
+          '$f = New-Object System.Windows.Forms.FolderBrowserDialog',
+          `$f.Description = '${DIALOG_TITLE}'`,
+          '$f.ShowNewFolderButton = $true',
+          'if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($f.SelectedPath) }',
+        ].join('; ')
+        const result = await run('powershell', ['-NoProfile', '-NonInteractive', '-Command', psCommand], signal, 'hidden')
+        return outputPath(result.stdout)
+      } catch (psErr: unknown) {
+        rethrowIfAborted(signal, psErr)
+        throw err
+      }
+    }
   }
 
   if (platform === 'linux') {

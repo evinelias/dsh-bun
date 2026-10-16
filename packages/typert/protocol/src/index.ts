@@ -295,7 +295,7 @@ export function Remote<This extends object, Args extends unknown[], Result>(
 ): RemoteTypedMethodDecorator<This, Args, Result>
 export function Remote<This extends object, Args extends unknown[], Result>(
   methodExportOrOptions: string | RemoteMethodOptions | ((this: This, ...args: Args) => Result),
-  context?: any,
+  context?: unknown,
 ): void | RemoteMethodDecorator {
   if (typeof context === 'string') {
     mark(methodExportOrOptions as object, context, { kind: 'direct' }, {})
@@ -351,16 +351,16 @@ function resourceReaders(resources: object): Readonly<Record<string, TypertResou
 function remoteDecorator(
   invocation: RemoteInvocationMarker,
   options: RemoteMarkerOptions = {},
-): any {
-  return function <This extends object, Args extends unknown[], Result>(
-    targetOrMethod: any,
-    contextOrKey: any,
-    _descriptor?: any,
+): RemoteMethodDecorator {
+  return function (
+    targetOrMethod: unknown,
+    contextOrKey: unknown,
+    _descriptor?: unknown,
   ): void {
     if (typeof contextOrKey === 'string') {
-      mark(targetOrMethod, contextOrKey, invocation, options)
+      mark(targetOrMethod as object, contextOrKey, invocation, options)
     } else {
-      addMarkerInitializer(contextOrKey, invocation, options)
+      addMarkerInitializer(contextOrKey as RemoteInitializerContext<object>, invocation, options)
     }
   }
 }
@@ -407,9 +407,23 @@ export function RemoteScope(
  * @returns markers in class declaration order.
  */
 export function remoteMethods(service: object): readonly RemoteMethodMarker[] {
-  const prototype = Object.getPrototypeOf(service) as object | null
-  if (prototype === null) return []
-  return (readRemoteMethodDescriptor(prototype)?.methods ?? []).map(marker => ({ ...marker }))
+  let prototype = Object.getPrototypeOf(service) as object | null
+  const result: RemoteMethodMarker[] = []
+  const seen = new Set<string>()
+  while (prototype !== null && prototype !== Object.prototype) {
+    const desc = readRemoteMethodDescriptor(prototype)
+    if (desc !== undefined) {
+      for (const marker of desc.methods) {
+        const key = marker.exportName ?? marker.method
+        if (!seen.has(key)) {
+          seen.add(key)
+          result.push({ ...marker })
+        }
+      }
+    }
+    prototype = Object.getPrototypeOf(prototype) as object | null
+  }
+  return result
 }
 
 function readRemoteMethodDescriptor(prototype: object): RemoteMethodDescriptorV1 | undefined {

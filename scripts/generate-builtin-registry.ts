@@ -80,11 +80,23 @@ for (const extra of extraPlugins) {
   allPlugins.add(extra)
 }
 
-// 4. Verify all entries resolve cleanly in Bun / apps/cli without /typert errors
+// 4. Also discover companion /typert manifests for all plugins
+for (const spec of Array.from(allPlugins)) {
+  const typertSpec = `${spec}/typert`
+  try {
+    cliRequire.resolve(typertSpec)
+    allPlugins.add(typertSpec)
+  } catch {
+    try {
+      require.resolve(typertSpec)
+      allPlugins.add(typertSpec)
+    } catch {}
+  }
+}
+
+// 5. Verify all entries resolve cleanly in Bun / apps/cli
 const validPlugins: string[] = []
 for (const spec of allPlugins) {
-  // Explicitly ignore any /typert subpaths or frontend packages that require Rolldown/Vite
-  if (spec.endsWith('/typert')) continue
   try {
     cliRequire.resolve(spec)
     validPlugins.push(spec)

@@ -221,7 +221,8 @@
     "verify-provider-data": "bun packages/llm/llm-pi-ai/scripts/gen-provider-data.ts --check",
     "verify-product-use": "bun scripts/verify-product-use.ts",
     "benchmark": "bun scripts/benchmark.ts",
-    "test:boot": "bun scripts/test-boot.ts"
+    "test:boot": "bun scripts/test-boot.ts",
+    "test:release": "bun scripts/verify-release-binary.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",

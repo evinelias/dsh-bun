@@ -481,7 +481,6 @@ export class TypertGatewayService extends Service implements TypertGateway {
       try {
         assertPeerLive(peer, endpoint)
         requireInteractions(peer, endpoint)
-        // oxlint-disable-next-line typescript/no-unnecessary-condition -- other packages merge non-owner kinds into PrincipalMap.
         if (peer.principal.kind !== 'owner') {
           throw new TypertGatewayError('gateway/invocation-unavailable', endpoint, 'only owner Peers answer forwarded Remote events')
         }
@@ -563,7 +562,6 @@ export class TypertGatewayService extends Service implements TypertGateway {
       signal: lifetime,
       deliveries: new Map(),
       principal: peer.principal,
-      // oxlint-disable-next-line typescript/no-unnecessary-condition -- other packages merge non-owner kinds into PrincipalMap.
       answers: peer.principal.kind === 'owner',
     }
     this.remoteEventClients.set(clientId, client)
@@ -783,7 +781,6 @@ export class TypertGatewayService extends Service implements TypertGateway {
     assertExactArguments(request.args, descriptor, endpoint)
     const validated = validateArguments(descriptor, request.args, endpoint)
     // Access precedes lookup resolution, so a refused call activates nothing.
-    // oxlint-disable-next-line typescript/no-unnecessary-condition -- other packages merge non-owner kinds into PrincipalMap.
     if (request.peer.principal.kind !== 'owner') {
       const resources = callResources(
         this.ctx.typert,
@@ -1587,26 +1584,28 @@ function methodParameterNames(service: object, method: string, endpoint: string)
     )
   }
   const source = Function.prototype.toString.call(implementation)
-  const open = source.indexOf('(')
-  const close = source.indexOf(')', open + 1)
+  const clean = source.replace(/\/\*[\s\S]*?\*\/|\/\/[^\r\n]*/g, '')
+  const open = clean.indexOf('(')
+  const close = clean.indexOf(')', open + 1)
   /* v8 ignore next -- standard public class-method syntax always contains a parenthesized parameter list. */
-  if (open < 0 || close < 0) return invalidSignature(endpoint, method)
-  const body = source.slice(open + 1, close).trim()
+  if (open < 0 || close < 0) return invalidSignature(endpoint, method, source)
+  const body = clean.slice(open + 1, close).trim()
   if (body.length === 0) return []
-  const parts = body.split(',').map(part => part.trim())
+  const parts = body.split(',').map(part => part.trim()).filter(Boolean)
   const names = new Set<string>()
   for (const part of parts) {
-    if (!/^[$A-Z_a-z][$\w]*$/u.test(part) || names.has(part)) return invalidSignature(endpoint, method)
+    if (!/^[$A-Z_a-z][$\w]*$/u.test(part) || names.has(part)) return invalidSignature(endpoint, method, source)
     names.add(part)
   }
   return [...names]
 }
 
-function invalidSignature(endpoint: string, method: string): never {
+function invalidSignature(endpoint: string, method: string, source?: string): never {
+  const detail = source !== undefined ? ` (signature: ${JSON.stringify(source.slice(0, 100))})` : ''
   throw new TypertGatewayError(
     'gateway/signature-invalid',
     endpoint,
-    `SRC method ${JSON.stringify(method)} must use unique identifier parameters without destructuring, defaults, or rest`,
+    `SRC method ${JSON.stringify(method)} must use unique identifier parameters without destructuring, defaults, or rest${detail}`,
   )
 }
 
