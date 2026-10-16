@@ -113,6 +113,10 @@ export abstract class EntryTree {
     if (name.startsWith('cordis:')) {
       return this.ctx.loader.builtins[name.slice(7)]
     }
+    const builtin = this.ctx.loader.builtins[name]
+    if (builtin !== undefined) {
+      return typeof builtin === 'function' && !builtin.prototype ? builtin() : builtin
+    }
     return composeError(async (info) => {
       // ModuleJob.run
       // onImport.tracePromise.__proto__
@@ -123,7 +127,53 @@ export abstract class EntryTree {
       } else if (name.startsWith('.')) {
         return await import(/* @vite-ignore */new URL(name, this.ctx.baseUrl).href)
       } else {
-        return await import(/* @vite-ignore */name)
+        try {
+          return await import(/* @vite-ignore */name)
+        } catch (origErr) {
+          try {
+            const fs = await import('node:fs')
+            const path = await import('node:path')
+            const url = await import('node:url')
+            const cwd = process.cwd()
+            const execDir = path.dirname(process.execPath)
+            const candidateRoots = new Set<string>()
+            let d = cwd
+            for (let i = 0; i < 7; i++) {
+              candidateRoots.add(d)
+              const p = path.dirname(d)
+              if (p === d) break
+              d = p
+            }
+            d = execDir
+            for (let i = 0; i < 7; i++) {
+              candidateRoots.add(d)
+              const p = path.dirname(d)
+              if (p === d) break
+              d = p
+            }
+            for (const root of candidateRoots) {
+              const candidate = path.join(root, 'node_modules', name)
+              if (fs.existsSync(candidate)) {
+                const pkgJsonPath = path.join(candidate, 'package.json')
+                if (fs.existsSync(pkgJsonPath)) {
+                  const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'))
+                  const entry = (typeof pkg.exports === 'object' && pkg.exports?.['.']?.bun)
+                    || pkg.bun
+                    || (typeof pkg.exports === 'object' && pkg.exports?.['.']?.import)
+                    || (typeof pkg.exports === 'string' && pkg.exports)
+                    || pkg.module
+                    || pkg.main
+                    || './src/index.ts'
+                  const target = path.resolve(candidate, entry)
+                  if (fs.existsSync(target)) {
+                    return await import(/* @vite-ignore */url.pathToFileURL(target).href)
+                  }
+                }
+              }
+            }
+          } catch {}
+          throw origErr
+        }
       }
     }, getOuterStack)
   }

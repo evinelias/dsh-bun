@@ -35,24 +35,29 @@ export type InjectKey = keyof {
  * @returns the class or method decorator.
  */
 export function Inject<K extends InjectKey>(name: K, config?: Context[K] extends { [symbols.config]: infer T } ? T : never) {
-  return function (value: any, decorator: ClassDecoratorContext<any> | ClassMethodDecoratorContext<any>) {
-    if (decorator.kind === 'class') {
+  return function (value: any, decorator?: any, descriptor?: any) {
+    const isClass = decorator === undefined || decorator?.kind === 'class'
+    const isMethod = typeof decorator === 'string' || decorator?.kind === 'method'
+    if (isClass) {
       if (!Object.hasOwn(value, 'inject')) {
         defineProperty(value, 'inject', Object.create(Object.getPrototypeOf(value).inject ?? null))
         defineProperty(value.inject, symbols.checkProto, true)
       }
       value.inject[name] = config
-    } else if (decorator.kind === 'method') {
-      const inject = (value[symbols.metadata] ??= {}).inject ??= Object.create(null)
+    } else if (isMethod) {
+      const method = typeof decorator === 'string' ? (descriptor ? descriptor.value : value[decorator]) : value
+      const inject = (method[symbols.metadata] ??= {}).inject ??= Object.create(null)
       inject[name] = config
-      decorator.addInitializer(function () {
-        const property = this[symbols.tracker]?.property
-        ;(this[symbols.initHooks] ??= []).push(() => {
-          (this.ctx as Context).inject(inject, (ctx) => {
-            return value.call(property ? withProps(this, { [property]: ctx }) : this)
+      if (decorator?.addInitializer) {
+        decorator.addInitializer(function () {
+          const property = this[symbols.tracker]?.property
+          ;(this[symbols.initHooks] ??= []).push(() => {
+            (this.ctx as Context).inject(inject, (ctx) => {
+              return value.call(property ? withProps(this, { [property]: ctx }) : this)
+            })
           })
         })
-      })
+      }
     } else {
       throw new Error('@Inject() can only be used on class or class methods')
     }

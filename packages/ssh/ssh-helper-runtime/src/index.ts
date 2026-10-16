@@ -1,9 +1,9 @@
 /** Private SEA dispatcher for the SSH helper and its managed process workers. */
 /* v8 ignore file -- the executable artifact suite runs this entry through pkg's SEA loader. */
-import { registerHooks } from 'node:module'
+import * as nodeModule from 'node:module'
 import { statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { isSea } from 'node:sea'
+const isSea = (): boolean => false
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -18,12 +18,15 @@ export async function runSshHelperRuntime(): Promise<void> {
   const nativeManifest = join(dirname(process.execPath), 'native', 'system', 'package.json')
   statSync(nativeManifest)
   const platformPackage = `@deepseek-ai/node-addon-system-${process.platform}-${process.arch}/package.json`
-  registerHooks({
-    resolve(specifier, context, nextResolve) {
-      if (specifier === platformPackage) return { url: pathToFileURL(nativeManifest).href, shortCircuit: true }
-      return nextResolve(specifier, context)
-    },
-  })
+  const registerFn = (nodeModule as any).registerHooks ?? (nodeModule as any).register
+  if (typeof registerFn === 'function') {
+    registerFn({
+      resolve(specifier: string, context: any, nextResolve: any) {
+        if (specifier === platformPackage) return { url: pathToFileURL(nativeManifest).href, shortCircuit: true }
+        return nextResolve(specifier, context)
+      },
+    })
+  }
 
   const selection = process.env.DSH_SUBPROCESS_RUNNER
   Reflect.deleteProperty(process.env, 'DSH_SUBPROCESS_RUNNER')

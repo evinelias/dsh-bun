@@ -158,7 +158,8 @@ const FONT_EXTENSIONS: readonly string[] = ['.woff2', '.woff', '.ttf']
  * `node_modules/`. pnpm nests the real package under an inner node_modules.
  */
 function npmPackageOf(id: string): string | undefined {
-  const parts = id.split('/node_modules/')
+  const normalized = id.replace(/\\/g, '/')
+  const parts = normalized.split('/node_modules/')
   if (parts.length === 1) return undefined
   const [first, second] = parts[parts.length - 1].split('/')
   if (first.startsWith('.')) return undefined // .pnpm store segment, not a package
@@ -171,7 +172,8 @@ export default defineConfig({
   // directory, and the served index resolves identically from the site root.
   base: './',
   plugins: [
-    rejectStandaloneServe(), clientDocumentTitle(), brandFontLicense(), katexWoff2Fonts(), react(), emitPreviewPage(),
+    rejectStandaloneServe(), clientDocumentTitle(), brandFontLicense(), katexWoff2Fonts(), react(),
+    ...(process.env.DSH_BUILD_PREVIEW ? [emitPreviewPage()] : []),
     productWebBundleIsolation(src('../..'), src('.')),
   ],
   build: {
@@ -182,10 +184,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         index: src('./index.html'),
-        // Standalone entry, not an index.html script tag: Vite folds every
-        // module tag of one page into a single synthetic entry, and only a
-        // separate input keeps the shared page chunks bootstrap-free.
-        bootstrap: src('./src/preview.ts'),
+        ...(process.env.DSH_BUILD_PREVIEW ? { bootstrap: src('./src/preview.ts') } : {}),
       },
       output: {
         // The worker-preview surface groups under dist/preview/ (the page
@@ -206,7 +205,7 @@ export default defineConfig({
           // index and vendor are excluded by name — vendor legitimately
           // carries the three boot grammars.
           if (chunk.name === 'index' || chunk.name === 'vendor') return 'assets/[name]-[hash].js'
-          const isLangChunk = chunk.moduleIds.some(id => id.includes('/node_modules/@shikijs/langs/'))
+          const isLangChunk = chunk.moduleIds.some(id => id.replace(/\\/g, '/').includes('/node_modules/@shikijs/langs/'))
           return isLangChunk ? 'assets/langs/[name]-[hash].js' : 'assets/[name]-[hash].js'
         },
         assetFileNames(asset): string {
@@ -244,8 +243,11 @@ export default defineConfig({
     // beside the bundle. Plugin packages never enter this graph; they arrive as
     // runtime bundles through the client module system. The remaining alias
     // browserizes the vendored Cordis Loader's only Node import.
+    conditions: ['bun'],
     alias: [
       { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
+      { find: '@deepseek-ai/dsh-client-ui-theme/brand-font.css', replacement: src('../../packages/client/ui-theme/src/styles/brand-font.css') },
+      { find: '@deepseek-ai/dsh-client-web', replacement: src('../../packages/client/web/src/index.ts') },
     ],
   },
   define: {

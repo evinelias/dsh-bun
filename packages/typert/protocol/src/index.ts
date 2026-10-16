@@ -295,8 +295,12 @@ export function Remote<This extends object, Args extends unknown[], Result>(
 ): RemoteTypedMethodDecorator<This, Args, Result>
 export function Remote<This extends object, Args extends unknown[], Result>(
   methodExportOrOptions: string | RemoteMethodOptions | ((this: This, ...args: Args) => Result),
-  context?: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Result>,
+  context?: any,
 ): void | RemoteMethodDecorator {
+  if (typeof context === 'string') {
+    mark(methodExportOrOptions as object, context, { kind: 'direct' }, {})
+    return
+  }
   if (typeof methodExportOrOptions === 'string') {
     validateName('Remote export name', methodExportOrOptions)
     return remoteDecorator({ kind: 'direct' }, { exportName: methodExportOrOptions })
@@ -347,12 +351,17 @@ function resourceReaders(resources: object): Readonly<Record<string, TypertResou
 function remoteDecorator(
   invocation: RemoteInvocationMarker,
   options: RemoteMarkerOptions = {},
-): RemoteMethodDecorator {
+): any {
   return function <This extends object, Args extends unknown[], Result>(
-    _method: (this: This, ...args: Args) => Result,
-    context: ClassMethodDecoratorContext<This, (this: This, ...args: Args) => Result>,
+    targetOrMethod: any,
+    contextOrKey: any,
+    _descriptor?: any,
   ): void {
-    addMarkerInitializer(context, invocation, options)
+    if (typeof contextOrKey === 'string') {
+      mark(targetOrMethod, contextOrKey, invocation, options)
+    } else {
+      addMarkerInitializer(contextOrKey, invocation, options)
+    }
   }
 }
 

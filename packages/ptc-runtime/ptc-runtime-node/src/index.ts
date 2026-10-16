@@ -1,7 +1,13 @@
 /** Node PTC execution with configurable per-call processes or retained in-memory REPL state. */
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { stripTypeScriptTypes } from 'node:module'
 import { isAbsolute } from 'node:path'
+
+function stripTypeScriptTypes(source: string): string {
+  if (typeof Bun !== 'undefined' && Bun.Transpiler) {
+    return new Bun.Transpiler({ loader: 'ts' }).transformSync(source)
+  }
+  return source
+}
 import { Context } from '@deepseek-ai/cordis'
 import { PtcRuntime } from '@deepseek-ai/dsh-ptc-runtime'
 import type { PtcBindingNamespace, PtcJsonValue, PtcRunFailure, PtcRunRequest, PtcRunResult, PtcRunSandbox, PtcRunSpec } from '@deepseek-ai/dsh-ptc-runtime'
@@ -197,10 +203,10 @@ export class NodePtcRuntime extends PtcRuntime {
       // Abort callbacks can settle execution before or during an awaited operation.
       // oxlint-disable-next-line typescript/no-unnecessary-condition
       if (settled) return await result.promise
-      const stripped = stripTypeScriptTypes(STRIP_PREFIX + spec.program + STRIP_SUFFIX)
+      stripTypeScriptTypes(STRIP_PREFIX + spec.program + STRIP_SUFFIX)
       parsing = false
       const data: ProgramBootData = {
-        code: stripped.slice(STRIP_PREFIX.length, stripped.length - STRIP_SUFFIX.length),
+        code: stripTypeScriptTypes(spec.program),
         namespaces: [...bindings.values()].map(binding => ({
           global: binding.global,
           names: Object.keys(binding.functions),

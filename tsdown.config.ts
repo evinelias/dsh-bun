@@ -1,6 +1,6 @@
 import { globSync } from 'node:fs'
 import { defineConfig } from 'tsdown'
-import { typertPlugin } from './packages/typert/generator/lib/types/tsdown-plugin.js'
+import { typertPlugin } from './packages/typert/generator/src/tsdown-plugin.ts'
 import { WORKSPACE_TYPERT_FACES } from './scripts/typert-faces.ts'
 import { workspacePackageGlobs } from './scripts/workspace-package-globs.ts'
 

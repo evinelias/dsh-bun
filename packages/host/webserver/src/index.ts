@@ -15,6 +15,8 @@ import { isIP, type AddressInfo } from 'node:net'
 import { resolve } from 'node:path'
 import type { Duplex } from 'node:stream'
 import { Context, Service } from '@deepseek-ai/cordis'
+import { Elysia } from 'elysia'
+import { cors } from '@elysiajs/cors'
 import z from '@deepseek-ai/schemastery'
 import compressionMiddleware from 'compression'
 import ipaddr from 'ipaddr.js'
@@ -314,13 +316,26 @@ export class WebServer extends Service {
   private listenedPort: number | undefined
   private readonly gzip: NodeMiddleware | undefined
   private readonly tlsConfig: TlsConfig | undefined
+  public readonly elysia: Elysia
 
   constructor(ctx: Context, private config: Config) {
     super(ctx, 'webServer')
+    this.elysia = new Elysia({ aot: false })
+      .use(cors({
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+      }))
     const resolved = config as ResolvedConfig
     // Schemastery passes an explicit `tls: null` through; only a real object serves TLS.
     this.tlsConfig = resolved.tls ?? undefined
     this.gzip = resolved.compression === 'gzip' ? createGzipMiddleware(resolved) : undefined
+  }
+
+  getOriginSafe(): string {
+    const host = bindUrlHost(this.config.host) ?? '127.0.0.1'
+    const port = this.listenedPort ?? this.config.port ?? 3000
+    return `${this.protocol}//${host}:${port}`
   }
 
   /** The listening port (the OS-assigned value when config.port is 0), or `undefined` before `listen` binds. */
@@ -420,6 +435,20 @@ export class WebServer extends Service {
   /** Listen; resolves once the socket is bound (rejection = FAILED fiber). */
   async [Service.init](): Promise<void> {
     const handle = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'access-control-allow-origin': req.headers.origin || '*',
+          'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD',
+          'access-control-allow-headers': req.headers['access-control-request-headers'] || '*',
+          'access-control-allow-credentials': 'true',
+        })
+        res.end()
+        return
+      }
+      if (req.headers.origin) {
+        res.setHeader('access-control-allow-origin', req.headers.origin)
+        res.setHeader('access-control-allow-credentials', 'true')
+      }
       /* v8 ignore next -- `?? '/'` arm: node:http always sets url on server
       requests; the field is only optional on the client-side IncomingMessage type */
       const rawPath = new URL(req.url ?? '/', 'http://x').pathname
@@ -428,6 +457,24 @@ export class WebServer extends Service {
         await route.handler(req, res)
         return
       }
+      try {
+        const fullUrl = new URL(req.url ?? '/', this.getOriginSafe())
+        const elysiaReq = new Request(fullUrl.href, {
+          method: req.method,
+          headers: req.headers as Record<string, string>,
+        })
+        const elysiaRes = await this.elysia.handle(elysiaReq)
+        if (elysiaRes && elysiaRes.status !== 404) {
+          res.writeHead(elysiaRes.status, Object.fromEntries(elysiaRes.headers.entries()))
+          if (elysiaRes.body) {
+            const buf = Buffer.from(await elysiaRes.arrayBuffer())
+            res.end(buf)
+          } else {
+            res.end()
+          }
+          return
+        }
+      } catch {}
       const fallback = this.fallback
       if (fallback === undefined) {
         res.writeHead(404)

@@ -17,7 +17,11 @@ function isPackagedExecutable(): boolean {
  * @returns the canonical directory path.
  */
 export function realModuleDirectory(path: string): string {
-  return isPackagedExecutable() ? realpathSync(path) : realpathSync.native(path)
+  try {
+    return isPackagedExecutable() ? realpathSync(path) : realpathSync.native(path)
+  } catch {
+    return path
+  }
 }
 
 /** Canonicalize a module resource, preserving physical file aliases.

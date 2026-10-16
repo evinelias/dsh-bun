@@ -308,7 +308,9 @@ class Hmr extends Service {
     super(ctx, 'hmr')
     this.ownerContext = ctx
     if (!this.ctx.loader.internal) {
-      throw new Error('--expose-internals is required for HMR service')
+      this.internal = null as any
+      this.baseDir = ''
+      return
     }
     this.internal = this.ctx.loader.internal
     this.baseDir = fileURLToPath(new URL(config.base || '.', ctx.baseUrl))
@@ -324,6 +326,7 @@ class Hmr extends Service {
 
   /** Whether this thread keeps a Node ES module cache; the packed worker loader keeps none. */
   private hasEsmCache(): boolean {
+    if (!this.internal) return false
     const cache: unknown = Reflect.get(this.internal, 'loadCache')
     return cache !== undefined
   }
@@ -347,12 +350,13 @@ class Hmr extends Service {
   /** The module job of the process entry point, when the loader cached it under the entry's real path. */
   private mainJob(): ModuleJob | undefined {
     const entry = process.argv[1]
-    if (entry === undefined) return undefined
+    if (entry === undefined || !this.internal) return undefined
     // A package bin starts through a link, and Node caches the module under its target.
     return this.esmJob(pathToFileURL(canonicalPath(resolve(entry))).href)
   }
 
   async* [Service.init](): AsyncGenerator<() => Promise<void>, void, unknown> {
+    if (!this.internal) return
     const mainJob = this.mainJob()
     let host: Promise<Set<string>> | undefined
     this.hostModules = () => host ??= mainJob === undefined ? Promise.resolve(new Set()) : loadDependencies(mainJob, new Set(), true)

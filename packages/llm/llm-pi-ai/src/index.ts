@@ -145,8 +145,8 @@ function directoryEntries(
       ...error === undefined ? {} : { error },
     })
   }
-  for (const provider of catalogProviderIds()) declare(provider, provider)
-  for (const [provider, profile] of profiles) declare(provider, profile.displayName, profile.catalogError)
+  catalogProviderIds().forEach(provider => declare(provider, provider))
+  profiles.forEach((profile, provider) => declare(provider, profile.displayName, profile.catalogError))
   return [...entries.values()]
 }
 

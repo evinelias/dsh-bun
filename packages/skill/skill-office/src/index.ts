@@ -3,7 +3,7 @@
 import { readFileSync, statSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, sep } from 'node:path'
-import { isSea } from 'node:sea'
+const isSea = (): boolean => false
 import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'

@@ -1,7 +1,13 @@
 /** Node PTC in-memory execution with retained processes scoped to caller-owned objects. */
 import { AsyncLocalStorage } from 'node:async_hooks'
-import { stripTypeScriptTypes } from 'node:module'
 import { isAbsolute } from 'node:path'
+
+function stripTypeScriptTypes(source: string): string {
+  if (typeof Bun !== 'undefined' && Bun.Transpiler) {
+    return new Bun.Transpiler({ loader: 'ts' }).transformSync(source)
+  }
+  return source
+}
 import { Context } from '@deepseek-ai/cordis'
 import type { PtcRunRequest, PtcRunSpec, PtcRunResult, PtcRunSandbox, PtcRunFailure, PtcBindingNamespace, PtcJsonValue } from '@deepseek-ai/dsh-ptc-runtime'
 import { clampTimeout } from '@deepseek-ai/dsh-timeout'

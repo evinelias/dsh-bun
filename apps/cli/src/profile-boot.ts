@@ -10,7 +10,7 @@
  * @module @deepseek-ai/dsh/profile-boot
  */
 
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FiberState, type Context } from '@deepseek-ai/cordis'
@@ -37,6 +37,7 @@ import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { DSH_LAUNCH_ENVIRONMENT_KEY, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { provideCmdline, type AppReady } from '@deepseek-ai/dsh-cmdline'
 import { createProcessShutdown, type ProcessShutdown } from './process-shutdown.ts'
+import { BUILTIN_PLUGINS } from './builtin-plugins.generated.ts'
 
 const NAME = 'dsh'
 
@@ -74,8 +75,30 @@ export function homePatchPath(): string {
   return join(resolveDshHome(), PROFILE_PATCH_FILENAME)
 }
 
+function getInstallAnchor(): string {
+  try {
+    const p = fileURLToPath(new URL('../package.json', import.meta.url))
+    if (existsSync(p)) return p
+  } catch {}
+  let dir = dirname(process.execPath)
+  for (let i = 0; i < 6; i++) {
+    const candidate = join(dir, 'package.json')
+    if (existsSync(candidate)) {
+      try {
+        const pkg = JSON.parse(readFileSync(candidate, 'utf8'))
+        if (pkg.name?.startsWith('@deepseek-ai/')) return candidate
+      } catch {}
+    }
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  const cwdCli = resolve(process.cwd(), 'apps/cli/package.json')
+  if (existsSync(cwdCli)) return cwdCli
+  return resolve(process.cwd(), 'package.json')
+}
 /** Absolute path of this dsh installation's package.json (both anchors: src/ and lib/ sit one level under apps/cli). */
-export const INSTALL_ANCHOR = fileURLToPath(new URL('../package.json', import.meta.url))
+export const INSTALL_ANCHOR = getInstallAnchor()
 
 /** The empty root entry list every profile tree patches over. */
 const PROFILE_ROOT_CONFIG = `# dsh profile root — an empty entry list. The tree is composed as patches:
@@ -322,6 +345,9 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
     }
     const ctx = await boot(NAME, rootConfig, readProfilePatches(NAME, profileContext, composed.profile), async (hostCtx) => {
       app.current = hostCtx
+      if (hostCtx.loader?.builtins) {
+        Object.assign(hostCtx.loader.builtins, BUILTIN_PLUGINS)
+      }
       hostCtx.provide('profileContext', profileContext)
       // Before any config-tree entry mounts, so plugins resolve all launch-time
       // environment values from the same immutable launch snapshot.

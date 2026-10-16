@@ -1,8 +1,9 @@
-/** Lazy libc execve and descriptor bindings used by the one-shot Linux bootstrap. */
-
-import { getSystemErrorMessage, getSystemErrorName } from 'node:util'
+import util from 'node:util'
 import { SUBPROCESS_CONTROL_FD } from '@deepseek-ai/dsh-subprocess/control'
 import { createLazyRequire } from '@deepseek-ai/dsh-lazy-require'
+
+const getSystemErrorName = util.getSystemErrorName ?? ((code: number) => `ERR_${code}`)
+const getSystemErrorMessage = (util as any).getSystemErrorMessage ?? ((code: number) => `System error ${code}`)
 
 const requireKoffi = createLazyRequire<typeof import('koffi')['default']>('koffi', import.meta.url)
 

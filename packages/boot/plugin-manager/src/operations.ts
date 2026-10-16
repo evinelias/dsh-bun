@@ -54,6 +54,17 @@ export interface PackageOperationOptions {
   lookupTimeoutMs?: number
 }
 
+export function defaultPackageManager(): string {
+  if (typeof (globalThis as any).Bun !== 'undefined') {
+    const basename = process.execPath.toLowerCase().replace(/\\/g, '/').split('/').pop() || ''
+    if (!basename.startsWith('bun')) {
+      return process.execPath
+    }
+    return 'bun'
+  }
+  return 'pnpm'
+}
+
 /** Resolve relative package specs against the caller's directory.
  * @param argument One pnpm argument.
  * @param cwd Invocation directory, never the profile directory.
@@ -174,10 +185,11 @@ async function namedSpecManifest(
     return existsSync(filename) ? JSON.parse(readFileSync(filename, 'utf8')) as object : undefined
   }
   if (parsed.kind !== 'registry') return undefined
-  const viewed = await execa(options.command ?? 'pnpm', [
-    ...options.args ?? [], 'view', parsed.spec, 'name', 'version', 'engines', 'peerDependencies', '--json',
-    ...flags, '--config.fetch-retries=0',
-  ], {
+  const pm = options.command ?? defaultPackageManager()
+  const viewArgs = pm === 'bun'
+    ? [...options.args ?? [], 'info', parsed.spec, '--json']
+    : [...options.args ?? [], 'view', parsed.spec, 'name', 'version', 'engines', 'peerDependencies', '--json', ...flags, '--config.fetch-retries=0']
+  const viewed = await execa(pm, viewArgs, {
     cwd: dir, env: environment, extendEnv: false, reject: false, stdin: 'ignore',
     ...options.signal === undefined ? {} : { cancelSignal: options.signal },
     timeout: options.lookupTimeoutMs ?? LOOKUP_TIMEOUT_MS,
@@ -313,7 +325,12 @@ export async function runProfilePnpm(
       output = output.subarray(output.length - options.outputBytes)
     }
   }
-  const environment = { ...(options.execution === 'cli' ? process.env : scrubbedParentEnv()), ...options.env }
+  const isBun = typeof (globalThis as any).Bun !== 'undefined'
+  const environment = {
+    ...(options.execution === 'cli' ? process.env : scrubbedParentEnv()),
+    ...(isBun ? { BUN_BE_BUN: '1' } : {}),
+    ...options.env,
+  }
   const restore = async (): Promise<void> => {
     for (const file of savedFiles) {
       if (file.text === undefined) await rm(file.path, { force: true })
@@ -354,8 +371,8 @@ export async function runProfilePnpm(
   // A service run captures output, so execa terminates the tree it leads when the
   // run is killed: a lifecycle script outlives the pnpm process that started it.
   // The CLI keeps the caller's process group, so an interrupt still reaches it.
-  const grouped = leadsOwnGroup(options.execution)
-  const child = execa(options.command ?? 'pnpm', [...options.args ?? [], ...args.map(arg => anchorPathSpec(arg, context.cwd))], {
+  const pm = options.command ?? defaultPackageManager()
+  const child = execa(pm, [...options.args ?? [], ...args.map(arg => anchorPathSpec(arg, context.cwd))], {
     cwd: dir, env: environment, extendEnv: false, reject: false,
     stdout: options.execution === 'cli' ? 'inherit' : 'pipe',
     stderr: options.execution === 'cli' ? 'inherit' : 'pipe',
@@ -504,8 +521,9 @@ export async function runProfilePnpm(
         // from its restored manifest without creating one, which removes what this run added.
         await restore()
         const hadLockfile = savedFiles.some(file => file.path.endsWith('pnpm-lock.yaml') && file.text !== undefined)
+        const pm = options.command ?? defaultPackageManager()
         const repair = ['install', hadLockfile ? '--frozen-lockfile' : '--config.lockfile=false']
-        const repairing = execa(options.command ?? 'pnpm', [...options.args ?? [], ...repair], {
+        const repairing = execa(pm, [...options.args ?? [], ...repair], {
           cwd: dir, env: environment, extendEnv: false, reject: false, stdin: 'ignore',
           ...options.idleTimeoutMs === undefined ? {} : { timeout: options.idleTimeoutMs },
         })
@@ -595,8 +613,13 @@ export interface PackageViewOptions {
 export async function readProfileRegistry(
   dir: string, options: { command?: string; args?: readonly string[]; env?: Readonly<Record<string, string>>; timeoutMs: number },
 ): Promise<string | null> {
-  const result = await execa(options.command ?? 'pnpm', [...options.args ?? [], 'config', 'get', 'registry'], {
-    cwd: dir, env: { ...scrubbedParentEnv(), ...options.env }, extendEnv: false, reject: false, stdin: 'ignore', timeout: options.timeoutMs,
+  const pm = options.command ?? defaultPackageManager()
+  const isBunPm = pm === 'bun' || pm.toLowerCase().includes('bun')
+  const registryArgs = isBunPm
+    ? [...options.args ?? [], 'pm', 'config', 'get', 'registry']
+    : [...options.args ?? [], 'config', 'get', 'registry']
+  const result = await execa(pm, registryArgs, {
+    cwd: dir, env: { ...scrubbedParentEnv(), ...(isBunPm ? { BUN_BE_BUN: '1' } : {}), ...options.env }, extendEnv: false, reject: false, stdin: 'ignore', timeout: options.timeoutMs,
   })
   // The registry is the last line: pnpm may print a notice before it.
   const answer = result.exitCode === 0 ? result.stdout.trim().replace(/^[\s\S]*\n/, '').trim() : ''
@@ -624,11 +647,13 @@ export function registryArguments(registry: Registry): string[] {
  * @returns pnpm's exit, output, and how the lookup ended.
  */
 export async function viewProfilePackage(dir: string, spec: string, options: PackageViewOptions): Promise<PackageViewResult> {
-  const result = await execa(options.command ?? 'pnpm', [
-    ...options.args ?? [], 'view', spec, 'name', 'version', 'description', 'dsh', '--json',
-    ...registryArguments(options.registry ?? null), '--config.fetch-retries=0',
-  ], {
-    cwd: dir, env: { ...scrubbedParentEnv(), ...options.env }, extendEnv: false, reject: false, stdin: 'ignore',
+  const pm = options.command ?? defaultPackageManager()
+  const isBunPm = pm === 'bun' || pm.toLowerCase().includes('bun')
+  const viewArgs = isBunPm
+    ? [...options.args ?? [], 'info', spec, '--json']
+    : [...options.args ?? [], 'view', spec, 'name', 'version', 'description', 'dsh', '--json', ...registryArguments(options.registry ?? null), '--config.fetch-retries=0']
+  const result = await execa(pm, viewArgs, {
+    cwd: dir, env: { ...scrubbedParentEnv(), ...(isBunPm ? { BUN_BE_BUN: '1' } : {}), ...options.env }, extendEnv: false, reject: false, stdin: 'ignore',
     timeout: options.timeoutMs, ...options.signal === undefined ? {} : { cancelSignal: options.signal },
   })
   const cause = result.exitCode === undefined && !result.timedOut && !result.isCanceled

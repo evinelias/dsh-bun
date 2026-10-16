@@ -93,9 +93,10 @@ function hasIntrinsicConstructor(prototype: object, name: 'Array' | 'Object'): b
   const constructor: unknown = descriptor?.value
   if (typeof constructor !== 'function') return false
   try {
+    const fnStr = Function.prototype.toString.call(constructor)
     return constructor.name === name
       && constructor.prototype === prototype
-      && Function.prototype.toString.call(constructor) === `function ${name}() { [native code] }`
+      && (fnStr === `function ${name}() { [native code] }` || fnStr.includes('[native code]'))
   } catch {
     return false
   }

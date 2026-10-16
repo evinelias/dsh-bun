@@ -4,19 +4,22 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.28.5",
-  "engines": {
-    "node": "^22.19.0 || >=24.0.0"
-  },
   "workspaces": [
     "vendor/*",
     "packages/*/*",
     "native/system",
     "native/system/packages/*",
     "apps/*",
-    "website"
+    "benchmarks",
+    "website",
+    "python/sdk-runtime"
   ],
   "scripts": {
+    "build:binary": "bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun",
+    "build:sidecar": "bun scripts/build-sidecar.ts",
+    "build:web": "bun run --cwd apps/web build",
+    "check:desktop": "bun scripts/check-desktop.ts",
+    "sync:upstream": "bun scripts/sync-upstream.ts",
     "prepare:primary-runtime": "tsx scripts/primary-runtime/prepare.ts",
     "build": "tsx scripts/build.ts",
     "build:artifacts": "tsx scripts/build.ts --scope artifacts",
@@ -26,7 +29,6 @@
     "build:lib": "pnpm run build:lib:host && pnpm run build:lib:client",
     "build:lib:host": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc -b tsconfig.host.json && tsdown --config-loader native --env.DSH_BUILD_FACE host && pnpm --filter @deepseek-ai/dsh-desktop run bundle",
     "build:lib:client": "tsc -b tsconfig.client.json && tsdown --config-loader native --env.DSH_BUILD_FACE client",
-    "build:web": "pnpm --filter @deepseek-ai/dsh-web-frontend run build",
     "build:desktop": "pnpm --filter @deepseek-ai/dsh-desktop run build",
     "dev:desktop": "pnpm --filter @deepseek-ai/dsh-desktop run dev",
     "start:desktop": "pnpm --filter @deepseek-ai/dsh-desktop run start",

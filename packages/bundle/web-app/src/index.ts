@@ -13,6 +13,7 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -82,11 +83,14 @@ export const Config: z<Config> = z.object({
 /** Environment variable naming the advertised URL of this Web GUI. */
 const DSH_WEB_URL = 'DSH_WEB_URL' as const
 
-const BROWSER_OPENER_MODULE = import.meta.resolve('open')
+let BROWSER_OPENER_MODULE = ''
+try {
+  BROWSER_OPENER_MODULE = import.meta.resolve('open')
+} catch {}
 
 const BROWSER_OPENER_PROGRAM = `
 try {
-  const { default: open } = await import(${JSON.stringify(BROWSER_OPENER_MODULE)})
+  const { default: open } = await import(${JSON.stringify(BROWSER_OPENER_MODULE || 'open')})
   const launcher = await open(process.argv[1])
   if (process.platform === 'win32') {
     // open resolves at PowerShell spawn; keep it referenced until that launcher hands the URL to Windows.
@@ -121,13 +125,38 @@ try {
  * ships its own page and carries no dist) boots without one.
  */
 function resolveDistIndex(): string {
-  const require = createRequire(import.meta.url)
+  const candidates: string[] = []
   try {
-    return join(dirname(require.resolve('@deepseek-ai/dsh-web-frontend/package.json')), 'dist', 'index.html')
-  } catch {
-    /* v8 ignore next 2 -- reachable only when the frontend package is absent from the checkout */
-    throw new Error('web-app: @deepseek-ai/dsh-web-frontend is not resolvable from this composition')
+    const require = createRequire(import.meta.url)
+    candidates.push(join(dirname(require.resolve('@deepseek-ai/dsh-web-frontend/package.json')), 'dist', 'index.html'))
+  } catch {}
+
+  const execDir = dirname(process.execPath)
+  const cwd = process.cwd()
+
+  candidates.push(
+    join(execDir, 'web-dist', 'index.html'),
+    join(execDir, 'dist', 'index.html'),
+    join(execDir, '..', 'web-dist', 'index.html'),
+    join(execDir, '..', 'Resources', 'web-dist', 'index.html'),
+    join(execDir, 'apps', 'web', 'dist', 'index.html'),
+    join(execDir, '..', 'apps', 'web', 'dist', 'index.html'),
+    join(cwd, 'apps', 'web', 'dist', 'index.html'),
+    join(cwd, 'web-dist', 'index.html'),
+    join(cwd, 'dist', 'index.html'),
+  )
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate
+    }
   }
+
+  if (candidates.length > 0 && candidates[0]) {
+    return candidates[0]
+  }
+
+  throw new Error('web-app: @deepseek-ai/dsh-web-frontend is not resolvable from this composition')
 }
 
 /** Start the maintained platform opener without forwarding Harness credentials. */
@@ -144,6 +173,16 @@ function spawnBrowserLauncher(url: string): ChildProcess {
 
 /** Hand one URL to the operating system's default browser. */
 async function openBrowser(url: string): Promise<void> {
+  if (!BROWSER_OPENER_MODULE || (process as any).isBun) {
+    if (process.platform === 'win32') {
+      spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref()
+    } else if (process.platform === 'darwin') {
+      spawn('open', [url], { detached: true, stdio: 'ignore' }).unref()
+    } else {
+      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref()
+    }
+    return
+  }
   const launcher = spawnBrowserLauncher(url)
   let launcherStderr = ''
   launcher.stderr?.setEncoding('utf8')

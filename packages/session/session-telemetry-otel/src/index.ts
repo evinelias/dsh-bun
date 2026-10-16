@@ -186,7 +186,10 @@ export class OpenTelemetrySessionBackend extends SessionTelemetryBackend {
       throw new Error(`session-telemetry-otel: shutdownTimeoutMillis must be a positive finite number no greater than ${MAX_TIMER_DELAY_MILLIS}, got ${String(shutdownTimeoutMillis)}`)
     }
     this.shutdownTimeoutMillis = shutdownTimeoutMillis
-    const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
+    let version = '0.2.1-alpha.4'
+    try {
+      version = (createRequire(import.meta.url)('../package.json') as { version: string }).version
+    } catch {}
     const reporter = ctx.otel.createSessionLogReporter({
       scope: { name: '@deepseek-ai/dsh-session-telemetry-otel', version },
       exporter: { ...config.exporter, url },

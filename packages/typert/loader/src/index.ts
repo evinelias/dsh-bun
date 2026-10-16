@@ -408,14 +408,26 @@ export async function apply(ctx: Context, config: Config): Promise<void> {
   const loadManifest = (pkgName: string, path: string): Promise<TypertContribution> => {
     let loading = manifests.get(pkgName)
     if (loading === undefined) {
-      loading = import(pathToFileURL(path).href).then(
-        (mod: Record<string, unknown>) => validateTypertManifest(pkgName, mod.TYPERT),
-        (cause: unknown) => {
-          throw new Error(
-            `typert-loader: ${pkgName} exports "${TYPERT_HOST_EXPORT}" but importing ${path} failed: ${String(cause)}`,
-          )
-        },
-      )
+      const doImport = async () => {
+        try {
+          const builtin = (ctx.loader?.builtins as any)?.[`${pkgName}/typert`]
+          if (builtin) {
+            const mod = typeof builtin === 'function' && !builtin.prototype ? await builtin() : builtin
+            return validateTypertManifest(pkgName, mod.TYPERT)
+          }
+        } catch {}
+        try {
+          const mod = await import(`${pkgName}/typert`)
+          return validateTypertManifest(pkgName, mod.TYPERT)
+        } catch {}
+        const mod = await import(pathToFileURL(path).href)
+        return validateTypertManifest(pkgName, mod.TYPERT)
+      }
+      loading = doImport().catch((cause: unknown) => {
+        throw new Error(
+          `typert-loader: ${pkgName} exports "${TYPERT_HOST_EXPORT}" but importing ${path} failed: ${String(cause)}`,
+        )
+      })
       manifests.set(pkgName, loading)
     }
     return loading

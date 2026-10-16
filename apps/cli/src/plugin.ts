@@ -5,7 +5,7 @@ import { DEFAULT_PROFILE_BUNDLES, initProfile, PROFILE_TEMPLATES, readProfileCom
 import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 
 function requireDesktopProfile(dir: string): void {
   if (!existsSync(join(dir, 'package.json'))) {
@@ -81,8 +81,12 @@ export async function runPlugin(profile: string, args: readonly string[], packag
     for (const warning of readProfileCompatibility(dir).warnings) process.stderr.write(`dsh: warning: ${warning}\n`)
   }
   const context = { profile, dir, installAnchor: INSTALL_ANCHOR, cwd: process.cwd() }
+  const isCompiled = typeof (globalThis as any).Bun !== 'undefined' && !basename(process.execPath).toLowerCase().startsWith('bun')
+  const defaultCmd = isCompiled ? process.execPath : (typeof (globalThis as any).Bun !== 'undefined' ? 'bun' : 'pnpm')
   const options: PackageOperationOptions = {
+    command: defaultCmd,
     ...packageManager,
+    env: isCompiled ? { ...packageManager?.env, BUN_BE_BUN: '1' } : packageManager?.env,
     execution: 'cli',
     outputBytes: 16384,
     lockWaitMs: 120000,
@@ -95,7 +99,10 @@ export async function runPlugin(profile: string, args: readonly string[], packag
       return runProfilePnpm(context, args, options)
     }, { waitMs: 120000 })
     : await runPluginCommand(context, args, options)
-  if (result.exitCode === 127) process.stderr.write('dsh: pnpm was not found; install pnpm and make it available on PATH.\n')
+  if (result.exitCode === 127) {
+    const pkg = options.command ?? defaultCmd
+    process.stderr.write(`dsh: ${pkg} was not found; install ${pkg} and make it available on PATH.\n`)
+  }
   for (const { name, version, runtimeVersion } of result.incompatible ?? []) {
     process.stderr.write(`dsh: to accept the risk, run: dsh plugin --profile ${profile} allow-version ${name}@${version} --dsh-version ${runtimeVersion} --accept-risk\n`)
   }

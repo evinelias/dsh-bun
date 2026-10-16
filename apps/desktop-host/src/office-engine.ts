@@ -1,5 +1,7 @@
 /** Resolve packaged Office engine manifests from their complete, unpacked resource directories. */
-import { registerHooks, type ModuleHooks } from 'node:module'
+import * as nodeModule from 'node:module'
+const registerHooks = (nodeModule as any).registerHooks ?? (nodeModule as any).register
+export type ModuleHooks = any
 import { realpathSync } from 'node:fs'
 import { basename, dirname, join, relative } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -21,7 +23,7 @@ export function runtimeArchivePath(runtimeDir: string): string | undefined {
  * @returns Installed resolver for the Host lifetime, or undefined for a non-ASAR runtime.
  */
 export function installOfficeEngineResolution(runtimeDir: string): ModuleHooks | undefined {
-  if (runtimeArchivePath(runtimeDir) === undefined) return undefined
+  if (typeof registerHooks !== 'function' || runtimeArchivePath(runtimeDir) === undefined) return undefined
   const root = realpathSync(runtimeDir)
   const archive = dirname(root)
   const source = pathToFileURL(join(root, 'node_modules', '@deepseek-ai', 'libreoffice-kit-')).href

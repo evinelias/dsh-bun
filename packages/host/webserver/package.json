@@ -15,6 +15,7 @@
   "types": "lib/types/index.d.ts",
   "exports": {
     ".": {
+      "bun": "./src/index.ts",
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
@@ -33,7 +34,10 @@
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "workspace:~",
+    "@elysiajs/cors": "1.4.2",
+    "@elysiajs/static": "1.4.10",
     "compression": "^1.8.1",
+    "elysia": "1.4.30",
     "ipaddr.js": "^2.5.0",
     "negotiator": "^1.1.0"
   },

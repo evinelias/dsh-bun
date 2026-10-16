@@ -829,7 +829,20 @@ function throwWithoutCjsAnchor(error: unknown, anchor: string): never {
 export function installRuntimeInterception(
   resolution: RuntimeResolution,
 ): RuntimeInterception {
-  const { esm, esmDefaultResolve, esmConditions, cjs, cjsConditions, modern } = internalModules()
+  let internal: InternalModules
+  try {
+    internal = internalModules()
+  } catch {
+    const router = new ResolutionRouter(resolution, () => [])
+    return {
+      packageDir(specifier, parentURL) {
+        return router.packageDir(specifier, parentURL)
+      },
+      replace(next) { router.replace(next) },
+      dispose() {},
+    }
+  }
+  const { esm, esmDefaultResolve, esmConditions, cjs, cjsConditions, modern } = internal
   const router = new ResolutionRouter(resolution, directory => cjs._nodeModulePaths(directory))
   let delegatedEsm: { parent: string | undefined; request: string } | undefined
 

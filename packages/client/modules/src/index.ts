@@ -630,7 +630,10 @@ export class ClientModuleRegistry extends Service {
    */
   constructor(ctx: Context) {
     super(ctx, 'clientModules')
-    const { version } = createRequire(import.meta.url)('../package.json') as { version: string }
+    let version = '0.2.1-alpha.4'
+    try {
+      version = (createRequire(import.meta.url)('../package.json') as { version: string }).version
+    } catch {}
     // The client build fixes this read into the built Host artifact.
     const commit = process.env.DSH_CLIENT_COMMIT_HASH
     this.release = commit === undefined ? { version } : { version, commit }
