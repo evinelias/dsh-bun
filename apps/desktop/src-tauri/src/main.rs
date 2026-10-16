@@ -124,6 +124,7 @@ fn main() {
                 } else if let Some(parent) = sidecar_path.parent() {
                     cmd.current_dir(parent);
                 }
+                cmd.env("DSH_DESKTOP", "1");
                 // Start web profile in headless mode (no external browser spawn, port 0 for OS-assigned port)
                 cmd.args(["web", "--no-open", "--port", "0"]);
                 cmd.stdout(std::process::Stdio::piped());
@@ -154,12 +155,17 @@ fn main() {
                                             if url_str.starts_with("http://") || url_str.starts_with("https://") {
                                                 println!("[Tauri Desktop] Captured authenticated URL: {}", url_str);
                                                 found_url = true;
-                                                let target_url = url_str.clone();
+                                                let target_url = if url_str.contains('?') {
+                                                    format!("{}&desktop=1", url_str)
+                                                } else {
+                                                    format!("{}?desktop=1", url_str)
+                                                };
                                                 let handle = app_handle.clone();
                                                 let handle_inner = app_handle.clone();
 
                                                 let _ = handle.run_on_main_thread(move || {
                                                     if let Some(window) = handle_inner.get_webview_window("main") {
+                                                        let _ = window.eval("window.dshDesktop = { protocolVersion: 1 };");
                                                         if let Ok(parsed_url) = target_url.parse::<tauri::Url>() {
                                                             let _ = window.navigate(parsed_url);
                                                         } else {

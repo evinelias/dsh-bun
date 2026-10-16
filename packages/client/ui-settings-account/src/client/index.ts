@@ -234,8 +234,12 @@ export function apply(ctx: Context): void {
         return result.value
       }
       try {
-        if (desktop) await request()
-        else await browser.start(request, () => snapshot.view)
+        if (desktop) {
+          const view = await request()
+          browser.follow(view)
+        } else {
+          await browser.start(request, () => snapshot.view)
+        }
       } catch (error) {
         publish({ ...snapshot, loginFailed: true })
         throw error

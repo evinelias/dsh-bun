@@ -63,7 +63,16 @@ export class BrowserLogin {
     }
     if (!attempt?.authorizeUrl || this.navigated) return
     this.navigated = true
-    if (this.popup && !this.popup.closed) this.popup.location.replace(this.destination(attempt.authorizeUrl))
+    const dest = this.destination(attempt.authorizeUrl)
+    try {
+      if (this.popup && !this.popup.closed) {
+        this.popup.location.replace(dest)
+        return
+      }
+    } catch {}
+    try {
+      window.open(dest, '_blank')
+    } catch {}
   }
 
   /** Close the owned authorization tab and stop following its attempt. */

@@ -8,6 +8,17 @@ interface DesktopBootGlobal {
     ready(): Promise<{ injections: Parameters<typeof applyIndexInjections>[0]; streamBaseUrl: string }>
   }
 }
+const urlParams = new URLSearchParams(window.location.search)
+const isDesktop = urlParams.get('desktop') === '1'
+  || typeof (globalThis as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined'
+  || typeof (globalThis as unknown as { __TAURI__?: unknown }).__TAURI__ !== 'undefined'
+  || 'dshDesktop' in globalThis
+
+if (isDesktop) {
+  const g = globalThis as unknown as { dshDesktop?: { protocolVersion: number } }
+  g.dshDesktop ??= { protocolVersion: 1 }
+}
+
 const desktop = (globalThis as DesktopBootGlobal).dshDesktopBoot
 const reportFailure = (reason: unknown): void => {
   if (desktop === undefined) throw reason

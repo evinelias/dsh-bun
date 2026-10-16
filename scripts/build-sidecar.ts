@@ -2,6 +2,12 @@ import { execSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+interface PkgJson {
+  name?: string
+  dsh?: { client?: unknown }
+}
 
 function copyClientPlugins(targetDir: string, rootDir: string): number {
   function walk(dir: string): string[] {
@@ -23,8 +29,8 @@ function copyClientPlugins(targetDir: string, rootDir: string): number {
   let count = 0
   for (const p of pkgs) {
     try {
-      const json = JSON.parse(readFileSync(p, 'utf8'))
-      if (json.dsh && json.dsh.client) {
+      const json = JSON.parse(readFileSync(p, 'utf8')) as PkgJson
+      if (json.dsh?.client && typeof json.name === 'string') {
         const srcDir = dirname(p)
         const destDir = join(targetDir, 'client-plugins', ...json.name.split('/'))
         mkdirSync(destDir, { recursive: true })
@@ -80,9 +86,10 @@ function getTargetTriple(): string {
   throw new Error(`Unsupported platform/architecture: ${platform}/${arch}`)
 }
 
-async function main() {
+function main(): void {
   console.log('=== Building DeepSeek Harness Web UI & Tauri v2 Sidecar ===')
-  const root = resolve(import.meta.dir, '..')
+  const scriptDir = dirname(fileURLToPath(import.meta.url))
+  const root = resolve(scriptDir, '..')
 
   // 1. Generate Typert manifests so host builtins resolve companion manifests
   console.log('[1/6] Generating Typert manifests...')
@@ -126,6 +133,27 @@ async function main() {
   const distPath = join(distDir, `dsh-bun${ext}`)
   cpSync(sidecarPath, distPath)
 
+  if (isWindows) {
+    const msvcPath = join(binariesDir, 'dsh-bun-x86_64-pc-windows-msvc.exe')
+    const gnuPath = join(binariesDir, 'dsh-bun-x86_64-pc-windows-gnu.exe')
+    const bareWinPath = join(binariesDir, 'dsh-bun.exe')
+    cpSync(sidecarPath, msvcPath)
+    cpSync(sidecarPath, gnuPath)
+    cpSync(sidecarPath, bareWinPath)
+    console.log('[+] Synchronized MSVC, GNU and bare dsh-bun Windows binaries')
+
+    // Also update installed Desktop AppData if present
+    const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
+    if (existsSync(installedDir)) {
+      try {
+        cpSync(sidecarPath, join(installedDir, 'dsh-bun.exe'))
+        console.log(`[+] Updated installed sidecar binary in ${installedDir}`)
+      } catch (e) {
+        console.warn(`[!] Could not update installed sidecar binary (in use?): ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+  }
+
   // 5. Copy web-dist adjacent to binaries so the sidecar is 100% self-contained
   console.log('[5/5] Bundling web-dist assets and client plugins adjacent to binaries...')
   const webDistSrc = join(root, 'apps', 'web', 'dist')
@@ -147,12 +175,27 @@ async function main() {
   cpSync(cliPkgSrc, join(distDir, 'package.json'))
   console.log('[+] Bundled package.json into web-dist and binaries directories')
 
+  if (isWindows) {
+    const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
+    if (existsSync(installedDir)) {
+      try {
+        cpSync(webDistSrc, join(installedDir, 'web-dist'), { recursive: true })
+        cpSync(webDistSrc, join(installedDir, 'binaries', 'web-dist'), { recursive: true })
+        console.log(`[+] Updated installed web-dist assets in ${installedDir}`)
+      } catch (e) {
+        console.warn(`[!] Could not update installed web-dist (in use?): ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+  }
+
   console.log(`[+] Sidecar successfully built: ${sidecarPath}`)
   console.log(`[+] Standalone binary: ${distPath}`)
   console.log('=== Sidecar build complete! ===')
 }
 
-main().catch((err) => {
+try {
+  main()
+} catch (err: unknown) {
   console.error('[-] Failed to build sidecar:', err)
   process.exit(1)
-})
+}

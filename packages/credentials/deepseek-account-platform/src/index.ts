@@ -1,4 +1,5 @@
 /** Platform PKCE account provider; browser approval never bypasses local cancellation. */
+import { spawn } from 'node:child_process'
 import { randomBytes, randomUUID, createHash, timingSafeEqual } from 'node:crypto'
 import type { ServerResponse } from 'node:http'
 import type {} from '@deepseek-ai/dsh-host-webserver'
@@ -573,6 +574,19 @@ export class PlatformAccount extends DeepSeekAccount {
       clearTimeout(timer)
       timer = setTimeout(() =>{  deadline.abort() }, remaining)
       this.update(attempt, { phase: 'waiting-browser', authorizeUrl, expiresAt })
+      if (attempt.loginSource === 'desktop' || process.env.DSH_DESKTOP === '1' || process.execPath.toLowerCase().includes('dsh-bun')) {
+        try {
+          if (platform() === 'win32') {
+            spawn('cmd.exe', ['/c', 'start', '', authorizeUrl.replaceAll('&', '^&')], { detached: true, stdio: 'ignore' }).unref()
+          } else if (platform() === 'darwin') {
+            spawn('open', [authorizeUrl], { detached: true, stdio: 'ignore' }).unref()
+          } else {
+            spawn('xdg-open', [authorizeUrl], { detached: true, stdio: 'ignore' }).unref()
+          }
+        } catch (openerErr) {
+          console.error('[deepseek-account] desktop browser opener failed', openerErr)
+        }
+      }
       const receivedCode = await code.promise
       signal.throwIfAborted()
       this.update(attempt, { phase: 'exchanging' })
