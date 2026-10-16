@@ -105,14 +105,64 @@ export async function pickNativeDirectory(
     } catch (err: unknown) {
       rethrowIfAborted(signal, err)
       try {
-        const psCommand = [
-          'Add-Type -AssemblyName System.Windows.Forms',
-          '$f = New-Object System.Windows.Forms.FolderBrowserDialog',
-          `$f.Description = '${DIALOG_TITLE}'`,
-          '$f.ShowNewFolderButton = $true',
-          'if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Out.Write($f.SelectedPath) }',
-        ].join('; ')
-        const result = await run('powershell', ['-NoProfile', '-NonInteractive', '-Command', psCommand], signal, 'hidden')
+        const modernPickerScript = [
+          'Add-Type -TypeDefinition @"',
+          'using System;',
+          'using System.Runtime.InteropServices;',
+          '[ComImport, Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")] class FileOpenDialogRCW {}',
+          '[ComImport, Guid("42f85136-db7e-439c-85f1-e4075d135fc8"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]',
+          'interface IFileOpenDialog {',
+          '  [PreserveSig] int Show(IntPtr parent);',
+          '  [PreserveSig] int SetFileTypes();',
+          '  [PreserveSig] int SetFileTypeIndex();',
+          '  [PreserveSig] int GetFileTypeIndex();',
+          '  [PreserveSig] int Advise();',
+          '  [PreserveSig] int Unadvise();',
+          '  [PreserveSig] int SetOptions(uint fos);',
+          '  [PreserveSig] int GetOptions(out uint fos);',
+          '  [PreserveSig] int SetDefaultFolder();',
+          '  [PreserveSig] int SetFolder();',
+          '  [PreserveSig] int GetFolder();',
+          '  [PreserveSig] int GetCurrentSelection();',
+          '  [PreserveSig] int SetFileName();',
+          '  [PreserveSig] int GetFileName();',
+          '  [PreserveSig] int SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);',
+          '  [PreserveSig] int SetOkButtonLabel();',
+          '  [PreserveSig] int SetFileNameLabel();',
+          '  [PreserveSig] int GetResult(out IShellItem ppsi);',
+          '}',
+          '[ComImport, Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]',
+          'interface IShellItem {',
+          '  [PreserveSig] int BindToHandler();',
+          '  [PreserveSig] int GetParent();',
+          '  [PreserveSig] int GetDisplayName(uint sigdnName, out IntPtr ppszName);',
+          '  [PreserveSig] int GetAttributes();',
+          '  [PreserveSig] int Compare();',
+          '}',
+          'public class ModernFolderPicker {',
+          '  [DllImport("user32.dll")] static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);',
+          '  public static string Show(string title) {',
+          '    var dlg = (IFileOpenDialog)new FileOpenDialogRCW();',
+          '    dlg.SetTitle(title);',
+          '    dlg.SetOptions(0x20 | 0x40 | 0x08);', // FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR
+          '    keybd_event(0x12, 0, 0, UIntPtr.Zero);',
+          '    keybd_event(0x12, 0, 2, UIntPtr.Zero);',
+          '    if (dlg.Show(IntPtr.Zero) != 0) return null;',
+          '    IShellItem item;',
+          '    if (dlg.GetResult(out item) != 0 || item == null) return null;',
+          '    IntPtr pName;',
+          '    if (item.GetDisplayName(0x80028000, out pName) != 0 || pName == IntPtr.Zero) return null;',
+          '    string path = Marshal.PtrToStringUni(pName);',
+          '    Marshal.FreeCoTaskMem(pName);',
+          '    return path;',
+          '  }',
+          '}',
+          '"@',
+          `$res = [ModernFolderPicker]::Show('${DIALOG_TITLE}')`,
+          'if ($res) { [Console]::Out.Write($res) }',
+        ].join('\n')
+        const encoded = Buffer.from(modernPickerScript, 'utf16le').toString('base64')
+        const result = await run('powershell', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], signal, 'hidden')
         return outputPath(result.stdout)
       } catch (psErr: unknown) {
         rethrowIfAborted(signal, psErr)

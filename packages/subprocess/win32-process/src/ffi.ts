@@ -141,6 +141,9 @@ let cachedTypes: Win32Types | undefined
 function win32Types(): Win32Types {
   if (cachedTypes !== undefined) return cachedTypes
   const koffi = requireKoffi()
+  if (!koffi || typeof koffi.pointer !== 'function') {
+    throw new Error('win32 native koffi binding is not available')
+  }
   const PVOID = koffi.pointer('void')
   const PPVOID = koffi.pointer(PVOID)
   const STARTUPINFOW = koffi.struct('DSH_STARTUPINFOW', {
@@ -257,6 +260,9 @@ let cached: CurrentTokenProcessBindings | undefined
 function bindingContext(): Win32BindingContext {
   if (cachedContext !== undefined) return cachedContext
   const koffi = requireKoffi()
+  if (!koffi || typeof koffi.load !== 'function') {
+    throw new Error('win32 native koffi binding is not available')
+  }
   const kernel32 = koffi.load('kernel32.dll')
   const advapi32 = koffi.load('advapi32.dll')
   const bind = (
@@ -272,6 +278,9 @@ function bindingContext(): Win32BindingContext {
 function bindings(): CurrentTokenProcessBindings {
   if (cached !== undefined) return cached
   const koffi = requireKoffi()
+  if (!koffi || typeof koffi.load !== 'function') {
+    throw new Error('win32 native koffi binding is not available')
+  }
   const { PVOID, PPVOID, STARTUPINFOW, PROCESS_INFORMATION } = win32Types()
   const { kernel32, advapi32, bind } = bindingContext()
   const node = koffi.load(null)

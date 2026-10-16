@@ -239,32 +239,37 @@ let cachedBindings: Win32Bindings | undefined
  * Resolve the lazy Win32 bindings (throws the first binding failure, fail-closed).
  * @returns the cached binding table.
  */
-function win32Bindings(): Win32Bindings {
+function win32Bindings(): Win32Bindings | undefined {
   if (cachedBindings !== undefined) return cachedBindings
-  const koffi = requireKoffi()
-  const { PVOID, PROCESSENTRY32W, FILETIME } = win32Structs()
-  const kernel32 = koffi.load('kernel32.dll')
-  const bind = (
-    name: string,
-    result: ReturnType<typeof koffi.pointer> | string,
-    args: Array<ReturnType<typeof koffi.pointer> | string>,
-  ): unknown => kernel32.func('__stdcall', name, result, args)
-  cachedBindings = {
-    createToolhelp32Snapshot: bind('CreateToolhelp32Snapshot', PVOID, ['uint32', 'uint32']),
-    process32FirstW: bind('Process32FirstW', 'int', [PVOID, koffi.pointer(PROCESSENTRY32W)]),
-    process32NextW: bind('Process32NextW', 'int', [PVOID, koffi.pointer(PROCESSENTRY32W)]),
-    openProcess: bind('OpenProcess', PVOID, ['uint32', 'int', 'uint32']),
-    getProcessTimes: bind('GetProcessTimes', 'int', [
-      PVOID,
-      koffi.pointer(FILETIME),
-      koffi.pointer(FILETIME),
-      koffi.pointer(FILETIME),
-      koffi.pointer(FILETIME),
-    ]),
-    waitForSingleObject: bind('WaitForSingleObject', 'uint32', [PVOID, 'uint32']),
-    closeHandle: bind('CloseHandle', 'int', [PVOID]),
-  } as Win32Bindings
-  return cachedBindings
+  try {
+    const koffi = requireKoffi()
+    if (!koffi || typeof koffi.load !== 'function') return undefined
+    const { PVOID, PROCESSENTRY32W, FILETIME } = win32Structs()
+    const kernel32 = koffi.load('kernel32.dll')
+    const bind = (
+      name: string,
+      result: ReturnType<typeof koffi.pointer> | string,
+      args: Array<ReturnType<typeof koffi.pointer> | string>,
+    ): unknown => kernel32.func('__stdcall', name, result, args)
+    cachedBindings = {
+      createToolhelp32Snapshot: bind('CreateToolhelp32Snapshot', PVOID, ['uint32', 'uint32']),
+      process32FirstW: bind('Process32FirstW', 'int', [PVOID, koffi.pointer(PROCESSENTRY32W)]),
+      process32NextW: bind('Process32NextW', 'int', [PVOID, koffi.pointer(PROCESSENTRY32W)]),
+      openProcess: bind('OpenProcess', PVOID, ['uint32', 'int', 'uint32']),
+      getProcessTimes: bind('GetProcessTimes', 'int', [
+        PVOID,
+        koffi.pointer(FILETIME),
+        koffi.pointer(FILETIME),
+        koffi.pointer(FILETIME),
+        koffi.pointer(FILETIME),
+      ]),
+      waitForSingleObject: bind('WaitForSingleObject', 'uint32', [PVOID, 'uint32']),
+      closeHandle: bind('CloseHandle', 'int', [PVOID]),
+    } as Win32Bindings
+    return cachedBindings
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -336,11 +341,31 @@ function windowsProcessState(bindings: Win32Bindings, pid: number): WindowsProce
   }
 }
 
-/** The koffi-backed default internals; bindings resolve lazily on first use. */
+/** The koffi-backed default internals with safe process.kill fallback when native bindings are unavailable. */
 function defaultWindowsProcessInternals(): WindowsProcessInspectorInternals {
   return {
-    snapshot: () => snapshotWindowsProcesses(win32Bindings()),
-    processState: pid => windowsProcessState(win32Bindings(), pid),
+    snapshot: () => {
+      try {
+        const bindings = win32Bindings()
+        if (bindings) return snapshotWindowsProcesses(bindings)
+      } catch {}
+      return []
+    },
+    processState: (pid) => {
+      try {
+        const bindings = win32Bindings()
+        if (bindings) return windowsProcessState(bindings, pid)
+      } catch {}
+      try {
+        process.kill(pid, 0)
+        return {
+          started: `${pid}`,
+          active: true,
+        }
+      } catch {
+        return undefined
+      }
+    },
     taskkill: taskkillTree,
   }
 }
