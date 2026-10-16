@@ -91,7 +91,7 @@ async function main() {
       console.log(`[+] Adding git remote 'upstream' -> ${UPSTREAM_URL}`)
       run(`git remote add upstream ${UPSTREAM_URL}`, root)
     } else {
-      console.log(`[✓] Git remote 'upstream' is configured.`)
+      console.log('[✓] Git remote \'upstream\' is configured.')
     }
   } catch (err) {
     console.warn(`[!] Unable to inspect git remotes: ${String(err)}`)

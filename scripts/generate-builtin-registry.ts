@@ -48,7 +48,7 @@ const packages = findPackages(join(root, 'packages'))
 findPackages(join(root, 'vendor'), packages)
 
 // Read current generated file to preserve any manual/curated entries if needed
-let existingKeys: string[] = []
+const existingKeys: string[] = []
 try {
   const currentContent = readFileSync(outputFile, 'utf8')
   const matches = currentContent.matchAll(/"([^"]+)":/g)

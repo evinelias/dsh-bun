@@ -57,7 +57,7 @@ child.stdout.on('data', async (chunk) => {
   const match = /dsh web:\s*(https?:\/\/127\.0\.0\.1:\d+\/\?token=\S+)/.exec(text)
   if (match && match[1] && !capturedUrl) {
     capturedUrl = match[1].trim()
-    console.log(`\n[+] Successfully extracted authenticated URL from sidecar stdout:`)
+    console.log('\n[+] Successfully extracted authenticated URL from sidecar stdout:')
     console.log(`    ${capturedUrl}`)
 
     clearTimeout(timeout)
