@@ -433,7 +433,7 @@ export class PlatformAccount extends DeepSeekAccount {
       } else attempt.callback?.writeHead(204, { 'cache-control': 'no-store' }).end()
     }).catch((error: unknown) => {
       const code = error instanceof PlatformAuthError ? error.code : 'protocol'
-      console.error('[deepseek-account] sign-in failed', { errorCode: code })
+      console.error('[deepseek-account] sign-in failed', { errorCode: code, message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined })
       this.update(attempt, { phase: code === 'expired' ? 'expired' : 'failed', errorCode: code })
       this.finishFailedCallback(attempt)
     }).then(async () => {

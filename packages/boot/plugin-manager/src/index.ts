@@ -13,7 +13,7 @@ import { TypertRemoteService, Remote } from '@deepseek-ai/dsh-typert-protocol'
 import { pluginEntryId, readPluginInventory } from '@deepseek-ai/dsh-host-plugin-inventory'
 import {
   readPluginMeta, readProfileManifest, resolveBundleDir, loadOverlayPatches, composeEntries,
-  readProfilePatches, OPTIONAL_BUNDLES, bundlePatchPaths,
+  readProfilePatches, reconcileProfilePatches, OPTIONAL_BUNDLES, bundlePatchPaths,
   evaluatePluginCompatibility, readProfileCompatibility, readProfileVersionExemptions,
   setProfileVersionExemption, PROFILE_COMPATIBILITY_FILENAME,
   OFFICIAL_ON_DEMAND_CATALOG, getDshRuntimeVersion, ResolutionRestartRequired,
@@ -894,9 +894,15 @@ export class PluginManager extends TypertRemoteService {
   private async reload(requiredIds: readonly string[] = []): Promise<Reload> {
     const hmr = this.ownerContext.get('hmr')
     if (hmr === undefined) {
-      // Startup-only profiles recompose at restart; the saved patches still have to compose.
-      composeEntries([readProfilePatches('dsh', this.profile)])
-      return { warnings: [] }
+      const patches = readProfilePatches('dsh', this.profile)
+      try {
+        const warnings = await reconcileProfilePatches(this.ownerContext.root, patches, 'dsh', requiredIds)
+        return { warnings }
+      } catch (error) {
+        this.ownerContext.logger.warn('Live profile patch reconciliation failed, falling back to restart-required', error)
+        composeEntries([patches])
+        return { warnings: [], restartReason: 'no-hmr' }
+      }
     }
     const { warnings, pending, restartReason } = await hmr.reconcileProfile(requiredIds)
     const restart = restartReason ?? pending[0]?.reason
@@ -911,8 +917,7 @@ export class PluginManager extends TypertRemoteService {
     return withFileLock(join(this.profile.dir, 'package.json'), async () => {
       this.abort.signal.throwIfAborted()
       const before = this.diskState()
-      const result: ChangeResult = { ...request, changed: false,
-        ...this.ownerContext.get('hmr') !== undefined ? { application: 'applied' } : { application: 'restart-required', restartReason: 'no-hmr' } }
+      const result: ChangeResult = { ...request, changed: false, application: 'applied' }
       try {
         const outcome = await operation(result)
         if (outcome !== undefined) result.application = outcome

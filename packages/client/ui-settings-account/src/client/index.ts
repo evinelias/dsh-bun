@@ -44,7 +44,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 export const inject = ['slots', 'locale', 'remote', 'remote.account', 'remote.session', 'theme', 'configForms']
 /** Register account UI in Desktop and plain Web clients. @param ctx - client plugin context. */
 export function apply(ctx: Context): void {
-  const desktop = 'dshDesktop' in globalThis
+  const isDesktopEnv = (): boolean =>
+    'dshDesktop' in globalThis
+    || new URLSearchParams(window.location.search).get('desktop') === '1'
+    || typeof (globalThis as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !== 'undefined'
+    || typeof (globalThis as unknown as { __TAURI__?: unknown }).__TAURI__ !== 'undefined'
+  const desktop = isDesktopEnv()
   ctx.effect(() => ctx.locale.register('settings.account', { en, zh }), 'account: dictionaries')
   const t = ctx.locale.bind('settings.account')
   const page = globalThis as Partial<Record<typeof CONTACT_CONFIG_GLOBAL, unknown>>
@@ -226,15 +231,19 @@ export function apply(ctx: Context): void {
       const transport = (globalThis as typeof globalThis & {
         __DSH_TRANSPORT__?: { streamBaseUrl?: string }
       }).__DSH_TRANSPORT__
+      const isCurrentDesktop = isDesktopEnv()
+      const callbackOrigin = isCurrentDesktop && transport?.streamBaseUrl !== undefined
+        ? new URL(transport.streamBaseUrl).origin
+        : `${window.location.protocol}//${window.location.host}`
       const request = async () => {
         const result = await ctx.remote.account.startSignIn(client(),
-          desktop && transport?.streamBaseUrl !== undefined ? new URL(transport.streamBaseUrl).origin : window.location.origin,
-          desktop ? 'desktop' : 'web')
+          callbackOrigin,
+          isCurrentDesktop ? 'desktop' : 'web')
         if (!result.ok) throw new Error('account start failed')
         return result.value
       }
       try {
-        if (desktop) {
+        if (isCurrentDesktop) {
           const view = await request()
           browser.follow(view)
         } else {
