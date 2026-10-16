@@ -1,7 +1,46 @@
 import { execSync } from 'node:child_process'
-import { cpSync, mkdirSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+
+function copyClientPlugins(targetDir: string, rootDir: string): number {
+  function walk(dir: string): string[] {
+    const results: string[] = []
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== 'target') {
+          results.push(...walk(full))
+        }
+      } else if (entry.name === 'package.json') {
+        results.push(full)
+      }
+    }
+    return results
+  }
+
+  const pkgs = walk(join(rootDir, 'packages'))
+  let count = 0
+  for (const p of pkgs) {
+    try {
+      const json = JSON.parse(readFileSync(p, 'utf8'))
+      if (json.dsh && json.dsh.client) {
+        const srcDir = dirname(p)
+        const destDir = join(targetDir, 'client-plugins', ...json.name.split('/'))
+        mkdirSync(destDir, { recursive: true })
+        cpSync(p, join(destDir, 'package.json'))
+        if (existsSync(join(srcDir, 'lib'))) {
+          cpSync(join(srcDir, 'lib'), join(destDir, 'lib'), { recursive: true })
+        }
+        if (existsSync(join(srcDir, 'locale'))) {
+          cpSync(join(srcDir, 'locale'), join(destDir, 'locale'), { recursive: true })
+        }
+        count++
+      }
+    } catch {}
+  }
+  return count
+}
 
 function getTargetTriple(): string {
   if (process.env.TARGET_TRIPLE) {
@@ -84,13 +123,17 @@ async function main() {
   cpSync(sidecarPath, distPath)
 
   // 5. Copy web-dist adjacent to binaries so the sidecar is 100% self-contained
-  console.log('[5/5] Bundling web-dist assets adjacent to binaries...')
+  console.log('[5/5] Bundling web-dist assets and client plugins adjacent to binaries...')
   const webDistSrc = join(root, 'apps', 'web', 'dist')
   const sidecarWebDist = join(binariesDir, 'web-dist')
   const distWebDist = join(distDir, 'web-dist')
 
   cpSync(webDistSrc, sidecarWebDist, { recursive: true })
   cpSync(webDistSrc, distWebDist, { recursive: true })
+
+  const sidecarClientCount = copyClientPlugins(sidecarWebDist, root)
+  copyClientPlugins(distWebDist, root)
+  console.log(`[+] Bundled ${sidecarClientCount} client plugins into web-dist/client-plugins`)
 
   console.log(`[+] Sidecar successfully built: ${sidecarPath}`)
   console.log(`[+] Standalone binary: ${distPath}`)

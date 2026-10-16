@@ -897,6 +897,33 @@ export class ClientModuleRegistry extends Service {
     const pathLike = loaderName.startsWith('.') || loaderName.startsWith('file:') || isAbsolute(loaderName)
     const expectedPackageName = pathLike ? undefined : exactPackageSpecifier(loaderName)
     if (!pathLike && expectedPackageName === undefined) return undefined
+
+    if (expectedPackageName !== undefined) {
+      const execDir = dirname(process.execPath)
+      const cwd = process.cwd()
+      const pluginDirs = [
+        join(execDir, 'binaries', 'web-dist', 'client-plugins'),
+        join(execDir, 'web-dist', 'client-plugins'),
+        join(execDir, 'client-plugins'),
+        join(execDir, '..', 'binaries', 'web-dist', 'client-plugins'),
+        join(execDir, '..', 'Resources', 'binaries', 'web-dist', 'client-plugins'),
+        join(execDir, '..', 'Resources', 'web-dist', 'client-plugins'),
+        join(cwd, 'binaries', 'web-dist', 'client-plugins'),
+        join(cwd, 'web-dist', 'client-plugins'),
+        join(cwd, 'apps', 'web', 'dist', 'client-plugins'),
+        join(cwd, 'dist', 'web-dist', 'client-plugins'),
+      ]
+      for (const dir of pluginDirs) {
+        const candidate = join(dir, ...expectedPackageName.split('/'), 'package.json')
+        if (existsSync(candidate)) {
+          return {
+            path: candidate,
+            packageName: expectedPackageName,
+          }
+        }
+      }
+    }
+
     const internal = this.ctx.loader.internal
     if (internal === undefined || typeof Reflect.get(internal, 'resolveSync') !== 'function') {
       if (expectedPackageName === undefined) {
