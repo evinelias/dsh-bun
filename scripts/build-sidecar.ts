@@ -84,11 +84,15 @@ async function main() {
   console.log('=== Building DeepSeek Harness Web UI & Tauri v2 Sidecar ===')
   const root = resolve(import.meta.dir, '..')
 
-  // 1. Build client plugin packages
-  console.log('[1/5] Building client packages (78 plugins)...')
+  // 1. Generate Typert manifests so host builtins resolve companion manifests
+  console.log('[1/6] Generating Typert manifests...')
+  execSync('bun scripts/generate-typert.ts', { cwd: root, stdio: 'inherit' })
+
+  // 2. Build client plugin packages
+  console.log('[2/6] Building client packages (78 plugins)...')
   execSync('bun scripts/build-client-packages.ts', { cwd: root, stdio: 'inherit' })
 
-  console.log('[1.5/5] Regenerating builtin plugins registry...')
+  console.log('[2.5/6] Regenerating builtin plugins registry...')
   execSync('bun scripts/generate-builtin-registry.ts', { cwd: root, stdio: 'inherit' })
 
   // 2. Build apps/web
