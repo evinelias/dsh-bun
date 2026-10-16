@@ -1,6 +1,6 @@
 import { readdirSync, existsSync, readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 
 function walk(dir: string): string[] {
   const results: string[] = []
@@ -41,8 +41,38 @@ async function runTsdown(pkgDir: string): Promise<{ success: boolean; error?: st
   })
 }
 
+function verifyClientBundles(dirs: { name: string; dir: string }[]): string[] {
+  const unbundledRequires: string[] = []
+  const remotePattern = /require\(["']@deepseek-ai\/[^"']+\/remote["']\)/
+
+  for (const { name, dir } of dirs) {
+    const clientJs = join(dir, 'lib', 'client.js')
+    if (existsSync(clientJs)) {
+      const content = readFileSync(clientJs, 'utf8')
+      const match = remotePattern.exec(content)
+      if (match) {
+        unbundledRequires.push(`${name} -> ${match[0]}`)
+      }
+    }
+  }
+  return unbundledRequires
+}
+
 async function main() {
   const root = process.cwd()
+
+  // 1. Generate Typert remote client definitions so that wire/remote contributions
+  // can be resolved and inlined by tsdown into client bundles
+  console.log('[+] Generating Typert remote definitions...')
+  const typertProc = spawnSync('bun', ['scripts/generate-typert.ts'], {
+    cwd: root,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  })
+  if (typertProc.status !== 0) {
+    throw new Error(`generate-typert failed with exit code ${typertProc.status}`)
+  }
+
   const pkgs = walk(join(root, 'packages'))
   const clientDirs: { name: string; dir: string }[] = []
 
@@ -86,6 +116,27 @@ async function main() {
   if (failed > 0) {
     process.exit(1)
   }
+
+  // Verify that all client bundles properly inlined their /remote requirements
+  const clientDirsForCheck: { name: string; dir: string }[] = []
+  for (const p of pkgs) {
+    try {
+      const json = JSON.parse(readFileSync(p, 'utf8'))
+      if (json.dsh && json.dsh.client) {
+        clientDirsForCheck.push({ name: json.name, dir: dirname(p) })
+      }
+    } catch {}
+  }
+
+  const leaks = verifyClientBundles(clientDirsForCheck)
+  if (leaks.length > 0) {
+    console.error(`[-] ERROR: Detected ${leaks.length} unbundled /remote requires in client bundles:`)
+    for (const leak of leaks) {
+      console.error(`    ${leak}`)
+    }
+    process.exit(1)
+  }
+  console.log('[+] Bundle verification passed: 0 unbundled /remote requires found.')
 }
 
 main().catch((err) => {
