@@ -137,6 +137,18 @@ export abstract class EntryTree {
             const cwd = process.cwd()
             const execDir = path.dirname(process.execPath)
             const candidateRoots = new Set<string>()
+            if (this.ctx.baseUrl) {
+              try {
+                const baseDir = this.ctx.baseUrl.startsWith('file:') ? url.fileURLToPath(this.ctx.baseUrl) : this.ctx.baseUrl
+                let d = fs.statSync(baseDir).isDirectory() ? baseDir : path.dirname(baseDir)
+                for (let i = 0; i < 7; i++) {
+                  candidateRoots.add(d)
+                  const p = path.dirname(d)
+                  if (p === d) break
+                  d = p
+                }
+              } catch {}
+            }
             let d = cwd
             for (let i = 0; i < 7; i++) {
               candidateRoots.add(d)

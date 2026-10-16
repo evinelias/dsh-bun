@@ -20,7 +20,7 @@ import {
 } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-hmr'
 import type { ProfileContext, ProfileManifest } from '@deepseek-ai/dsh-app-boot'
-import { bundleManifest, readProfileRegistry, registryArguments, runProfilePnpm, saveManifest, viewProfilePackage } from './operations.ts'
+import { bundleManifest, defaultPackageManager, readProfileRegistry, registryArguments, runProfilePnpm, saveManifest, viewProfilePackage } from './operations.ts'
 import { classifyInstallFailure } from './install-failure.ts'
 import { officialBundleInstallTarget } from './official-install-target.ts'
 import { dependencySpec, InvalidInstallSpecError, parseInstallSpec, type ParsedInstallSpec } from './install-spec.ts'
@@ -207,7 +207,7 @@ declare module '@deepseek-ai/cordis' {
 export class PluginManager extends TypertRemoteService {
   static inject = ['loader', 'profileContext']
   static Config: z<Config> = z.object({
-    pnpmCommand: z.string().default('pnpm'),
+    pnpmCommand: z.string().default(defaultPackageManager()),
     outputBytes: z.number().step(1).min(1).default(16384),
     lockWaitMs: z.number().step(1).min(0).default(120000),
     inspectTimeoutMs: z.number().step(1).min(1000).default(20000),
@@ -755,7 +755,8 @@ export class PluginManager extends TypertRemoteService {
     args: readonly string[], signal?: AbortSignal, requestId?: PluginInstallRequestId,
   ): Promise<PackageResult> {
     const jobId = randomUUID()
-    const argv = ['pnpm', ...args]
+    const pm = this.profile.packageManager?.command ?? this.pnpmCommand
+    const argv = [pm, ...args]
     const cwd = this.profile.dir
     const identity = requestId === undefined ? {} : { requestId }
     const task = runProfilePnpm({ ...this.profile, profile: this.profile.name }, args, {

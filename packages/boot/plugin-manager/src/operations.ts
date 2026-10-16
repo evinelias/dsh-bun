@@ -13,7 +13,7 @@ import {
 } from '@deepseek-ai/dsh-app-boot'
 import { scrubbedParentEnv } from '@deepseek-ai/dsh-subprocess'
 import { parseInstallSpec } from './install-spec.ts'
-import { awaitTreeGone, leadsOwnGroup, treeAlive, type RunTree } from './run-tree.ts'
+import { awaitTreeGone, treeAlive, type RunTree } from './run-tree.ts'
 import { incompatiblePlugin } from './failure.ts'
 import type { IncompatiblePlugin, PackageResult, Registry } from './types.ts'
 export { setProfileVersionExemption, readProfileVersionExemptions } from '@deepseek-ai/dsh-app-boot'
@@ -55,14 +55,14 @@ export interface PackageOperationOptions {
 }
 
 export function defaultPackageManager(): string {
-  if (typeof (globalThis as any).Bun !== 'undefined') {
+  if (typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined') {
     const basename = process.execPath.toLowerCase().replace(/\\/g, '/').split('/').pop() || ''
     if (!basename.startsWith('bun')) {
       return process.execPath
     }
     return 'bun'
   }
-  return 'pnpm'
+  return 'bun'
 }
 
 /** Resolve relative package specs against the caller's directory.
@@ -325,7 +325,7 @@ export async function runProfilePnpm(
       output = output.subarray(output.length - options.outputBytes)
     }
   }
-  const isBun = typeof (globalThis as any).Bun !== 'undefined'
+  const isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined'
   const environment = {
     ...(options.execution === 'cli' ? process.env : scrubbedParentEnv()),
     ...(isBun ? { BUN_BE_BUN: '1' } : {}),
@@ -431,6 +431,7 @@ export async function runProfilePnpm(
   // for a silence bound to observe: it would fire on a healthy run.
   if (collectors.length > 0) armIdle()
   let exitCode: number
+  const grouped = options.execution === 'service' && process.platform !== 'win32'
   try {
     await recordRun(dir, { pid: child.pid, grouped })
     // execa resolves its promise only once the piped stdio has ended, so the

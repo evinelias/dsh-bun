@@ -1,6 +1,7 @@
 /** Read plugin display text and icons through exported resources without evaluating plugin code. */
 
 import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, extname, isAbsolute, join, relative, resolve, sep, win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ModuleLoader } from '@deepseek-ai/cordis-plugin-loader'
@@ -72,11 +73,22 @@ function assertPackageOwned(file: string, name: string): void {
  */
 export function resolvePluginResource(specifier: string, parentURL: string): string {
   const loader = ModuleLoader.fromInternal()
-  if (loader === undefined) throw new Error('Plugin metadata requires the Node module resolver')
-  const result = loader.version === 'v2'
-    ? loader.resolveSync(parentURL, { specifier, attributes: {} })
-    : loader.resolveSync(specifier, parentURL, {})
-  return fileURLToPath(result.url)
+  if (loader !== undefined) {
+    const result = loader.version === 'v2'
+      ? loader.resolveSync(parentURL, { specifier, attributes: {} })
+      : loader.resolveSync(specifier, parentURL, {})
+    return fileURLToPath(result.url)
+  }
+  // Fallback for Bun / standalone runtime:
+  for (const base of [parentURL, join(process.cwd(), 'package.json'), import.meta.url]) {
+    try {
+      const parentPath = base.startsWith('file:') ? fileURLToPath(base) : base
+      return createRequire(parentPath).resolve(specifier)
+    } catch {}
+  }
+  const err: NodeJS.ErrnoException = new Error(`Cannot find module '${specifier}'`)
+  err.code = 'MODULE_NOT_FOUND'
+  throw err
 }
 
 function missingResource(error: unknown): boolean {

@@ -11,7 +11,7 @@
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FiberState, type Context } from '@deepseek-ai/cordis'
 import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
@@ -334,9 +334,15 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
     })
 
     const rootConfig = join(composed.profile.dir, PROFILE_ROOT_FILENAME)
+    const isCompiled = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined' && !basename(process.execPath).toLowerCase().startsWith('bun')
+    const defaultCmd = isCompiled ? process.execPath : 'bun'
+    const defaultPm: ProfileContext['packageManager'] = {
+      command: defaultCmd,
+      env: isCompiled ? { BUN_BE_BUN: '1' } : undefined,
+    }
     const profileContext: ProfileContext = {
       name: options.profile,
-      ...(options.packageManager === undefined ? {} : { packageManager: options.packageManager }),
+      packageManager: options.packageManager ?? defaultPm,
       dir: composed.profile.dir, patchPath: composed.profile.patchPath,
       installAnchor: options.resolvedProfile?.installAnchor ?? INSTALL_ANCHOR,
       startedBundles: composed.profile.layers.map(layer => layer.packageName),
