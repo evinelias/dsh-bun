@@ -127,26 +127,31 @@ function main(): void {
     stdio: 'inherit',
   })
 
+  function safeCp(src: string, dest: string, opts?: { recursive?: boolean }): void {
+    if (resolve(src) === resolve(dest)) return
+    cpSync(src, dest, opts)
+  }
+
   // Also create a local dist/dsh-bun copy for CLI use
   const distDir = join(root, 'dist')
   mkdirSync(distDir, { recursive: true })
   const distPath = join(distDir, `dsh-bun${ext}`)
-  cpSync(sidecarPath, distPath)
+  safeCp(sidecarPath, distPath)
 
   if (isWindows) {
     const msvcPath = join(binariesDir, 'dsh-bun-x86_64-pc-windows-msvc.exe')
     const gnuPath = join(binariesDir, 'dsh-bun-x86_64-pc-windows-gnu.exe')
     const bareWinPath = join(binariesDir, 'dsh-bun.exe')
-    cpSync(sidecarPath, msvcPath)
-    cpSync(sidecarPath, gnuPath)
-    cpSync(sidecarPath, bareWinPath)
+    safeCp(sidecarPath, msvcPath)
+    safeCp(sidecarPath, gnuPath)
+    safeCp(sidecarPath, bareWinPath)
     console.log('[+] Synchronized MSVC, GNU and bare dsh-bun Windows binaries')
 
     // Also update installed Desktop AppData if present
     const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
     if (existsSync(installedDir)) {
       try {
-        cpSync(sidecarPath, join(installedDir, 'dsh-bun.exe'))
+        safeCp(sidecarPath, join(installedDir, 'dsh-bun.exe'))
         console.log(`[+] Updated installed sidecar binary in ${installedDir}`)
       } catch (e) {
         console.warn(`[!] Could not update installed sidecar binary (in use?): ${e instanceof Error ? e.message : String(e)}`)
