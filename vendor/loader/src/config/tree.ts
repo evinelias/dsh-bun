@@ -131,10 +131,13 @@ export abstract class EntryTree {
           return await import(/* @vite-ignore */name)
         } catch (origErr) {
           try {
-            const fs = await import('node:fs')
-            const path = await import('node:path')
-            const url = await import('node:url')
-            const os = await import('node:os')
+            if (typeof window !== 'undefined' || typeof process === 'undefined' || typeof process.cwd !== 'function') {
+              throw origErr
+            }
+            const fs = await import(/* @vite-ignore */'node:fs')
+            const path = await import(/* @vite-ignore */'node:path')
+            const url = await import(/* @vite-ignore */'node:url')
+            const os = await import(/* @vite-ignore */'node:os')
             const cwd = process.cwd()
             const execDir = path.dirname(process.execPath)
             const candidateRoots = new Set<string>()
@@ -181,8 +184,40 @@ export abstract class EntryTree {
             for (const root of candidateRoots) {
               const candidate = path.join(root, 'node_modules', name)
               if (fs.existsSync(candidate)) {
+                const nodeModulesDir = path.join(root, 'node_modules')
                 const pkgJsonPath = path.join(candidate, 'package.json')
                 if (fs.existsSync(pkgJsonPath)) {
+                  try {
+                    const fixPkg = (dir: string) => {
+                      const pj = path.join(dir, 'package.json')
+                      if (!fs.existsSync(pj)) return
+                      try {
+                        const p = JSON.parse(fs.readFileSync(pj, 'utf8'))
+                        const hasJs = fs.existsSync(path.join(dir, 'index.js'))
+                        const hasMjs = fs.existsSync(path.join(dir, 'index.mjs'))
+                        if (hasJs && hasMjs) return
+                        const rel = (typeof p.exports === 'object' && p.exports?.['.']?.bun)
+                          || (typeof p.exports === 'object' && p.exports?.['.']?.import)
+                          || (typeof p.exports === 'object' && p.exports?.['.']?.default)
+                          || (typeof p.exports?.['.'] === 'string' && p.exports['.'])
+                          || p.bun || p.module || p.main
+                          || (fs.existsSync(path.join(dir, 'lib', 'index.mjs')) ? 'lib/index.mjs' : undefined)
+                          || (fs.existsSync(path.join(dir, 'lib', 'index.js')) ? 'lib/index.js' : undefined)
+                        if (!rel || typeof rel !== 'string') return
+                        const norm = rel.replace(/^[./\\]+/, '').replace(/\\/g, '/')
+                        if (norm === 'index.js' || norm === 'index.mjs' || !fs.existsSync(path.join(dir, norm))) return
+                        const code = `const _mod = await import("./${norm}");\nexport default _mod.default ?? _mod;\nexport * from "./${norm}";\n`
+                        if (!hasJs) fs.writeFileSync(path.join(dir, 'index.js'), code, 'utf8')
+                        if (!hasMjs) fs.writeFileSync(path.join(dir, 'index.mjs'), code, 'utf8')
+                      } catch {}
+                    }
+                    fixPkg(candidate)
+                    const scopeDir = path.join(nodeModulesDir, '@deepseek-ai')
+                    if (fs.existsSync(scopeDir)) {
+                      for (const s of fs.readdirSync(scopeDir)) fixPkg(path.join(scopeDir, s))
+                    }
+                  } catch {}
+
                   const pkg = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'))
                   const entry = (typeof pkg.exports === 'object' && pkg.exports?.['.']?.bun)
                     || (typeof pkg.exports === 'object' && pkg.exports?.['.']?.import)
@@ -196,12 +231,19 @@ export abstract class EntryTree {
                     || './src/index.ts'
                   const target = path.resolve(candidate, entry)
                   if (fs.existsSync(target)) {
-                    return await import(/* @vite-ignore */url.pathToFileURL(target).href)
+                    try {
+                      return await import(/* @vite-ignore */url.pathToFileURL(target).href)
+                    } catch (importErr) {
+                      console.error(`[dsh:loader] Error importing "${name}" from "${target}":`, importErr)
+                      throw importErr
+                    }
                   }
                 }
               }
             }
-          } catch {}
+          } catch (scanErr) {
+            console.error(`[dsh:loader] Candidate scan failed for "${name}":`, scanErr)
+          }
           throw origErr
         }
       }

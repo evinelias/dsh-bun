@@ -17,6 +17,7 @@ import {
   evaluatePluginCompatibility, readProfileCompatibility, readProfileVersionExemptions,
   setProfileVersionExemption, PROFILE_COMPATIBILITY_FILENAME,
   OFFICIAL_ON_DEMAND_CATALOG, getDshRuntimeVersion, ResolutionRestartRequired,
+  ensurePackageRootIndices,
 } from '@deepseek-ai/dsh-app-boot'
 import type {} from '@deepseek-ai/dsh-hmr'
 import type { ProfileContext, ProfileManifest } from '@deepseek-ai/dsh-app-boot'
@@ -606,7 +607,10 @@ export class PluginManager extends TypertRemoteService {
         if (run === undefined) throw new Error('no registry was asked')
         // A terminated run reports no usable exit status, so neither its files nor its bundle are trusted.
         const succeeded = run.exitCode === 0 && run.timedOut !== true
-        if (succeeded) delete result.failedAt
+        if (succeeded) {
+          delete result.failedAt
+          ensurePackageRootIndices(join(this.profile.dir, 'node_modules'))
+        }
         if (!succeeded) {
           // pnpm-workspace.yaml is not restored, so the names it left undecided, or reported as ignored, are offered for approval.
           try { result.pendingBuilds = await recordPendingBuilds(this.profile.dir, run.output) }
@@ -894,6 +898,7 @@ export class PluginManager extends TypertRemoteService {
   private async reload(requiredIds: readonly string[] = []): Promise<Reload> {
     const hmr = this.ownerContext.get('hmr')
     if (hmr === undefined) {
+      ensurePackageRootIndices(join(this.profile.dir, 'node_modules'))
       const patches = readProfilePatches('dsh', this.profile)
       try {
         const warnings = await reconcileProfilePatches(this.ownerContext.root, patches, 'dsh', requiredIds)

@@ -128,30 +128,38 @@ export function apply(ctx: Context): void {
   let disposed = false
   ctx.effect(() => () => { disposed = true; return stream.dispose() }, 'account: state stream')
   void (async () => {
-    for await (const frame of stream) {
-      revision++
-      refreshing = undefined
-      avatar.reset()
-      const initialize = frame.value.status === 'credential-stored' && frame.value.attempt?.phase === 'succeeded'
-        && snapshot.view?.attempt?.phase !== 'succeeded'
-      const { notice, ...previous } = snapshot
-      publish({ ...previous, view: frame.value, details: undefined, avatar: undefined, failed: false,
-        ...(frame.value.status === 'credential-stored' && notice ? { notice } : {}) })
-      browser.update(frame.value)
-      frame.accept()
-      if (frame.value.status === 'credential-stored') notices.begin()
-      else notices.end()
-      if (initialize) void (async () => {
-        try {
-          const initialized = await ctx.remote.session.initializeDefaultModel()
-          if (!initialized.ok) console.error('[deepseek-account] default model initialization failed', { reason: 'refused' })
-        } catch (_error) {
-          console.error('[deepseek-account] default model initialization failed', { reason: 'disconnected' })
+    while (!disposed) {
+      try {
+        for await (const frame of stream) {
+          revision++
+          refreshing = undefined
+          avatar.reset()
+          const initialize = frame.value.status === 'credential-stored' && frame.value.attempt?.phase === 'succeeded'
+            && snapshot.view?.attempt?.phase !== 'succeeded'
+          const { notice, ...previous } = snapshot
+          publish({ ...previous, view: frame.value, details: undefined, avatar: undefined, failed: false,
+            ...(frame.value.status === 'credential-stored' && notice ? { notice } : {}) })
+          browser.update(frame.value)
+          frame.accept()
+          if (frame.value.status === 'credential-stored') notices.begin()
+          else notices.end()
+          if (initialize) void (async () => {
+            try {
+              const initialized = await ctx.remote.session.initializeDefaultModel()
+              if (!initialized.ok) console.error('[deepseek-account] default model initialization failed', { reason: 'refused' })
+            } catch (_error) {
+              console.error('[deepseek-account] default model initialization failed', { reason: 'disconnected' })
+            }
+          })()
+          void refresh()
         }
-      })()
-      void refresh()
+      } catch (_error) {
+        if (!disposed) {
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
     }
-  })().catch(() => { if (!disposed) publish({ ...snapshot, failed: true }) })
+  })()
   const nativePlatform = (globalThis as typeof globalThis & { dshPlatform?: PlatformBridge }).dshPlatform
   // One request channel for the single native Platform view. It always exists
   // so every entry can observe whether a page is showing; only a native bridge
@@ -212,7 +220,7 @@ export function apply(ctx: Context): void {
         openForm(deviceInfo)
       })()
     },
-    showLogin(visible) { publish({ ...snapshot, loginVisible: visible }) },
+    showLogin(visible) { publish({ ...snapshot, loginVisible: visible, loginFailed: false, failed: false }) },
     setOnboarding(active) { publish({ ...snapshot, onboarding: active }) },
     bonusNoticeShown(orderId) { notices.shown(orderId) },
     bonusNoticeDismissed(orderId) { notices.dismiss(orderId) },
@@ -227,14 +235,17 @@ export function apply(ctx: Context): void {
       },
     },
     async start() {
-      publish({ ...snapshot, loginVisible: true, loginFailed: false })
+      publish({ ...snapshot, loginVisible: true, loginFailed: false, failed: false })
       const transport = (globalThis as typeof globalThis & {
         __DSH_TRANSPORT__?: { streamBaseUrl?: string }
       }).__DSH_TRANSPORT__
       const isCurrentDesktop = isDesktopEnv()
-      const callbackOrigin = isCurrentDesktop && transport?.streamBaseUrl !== undefined
-        ? new URL(transport.streamBaseUrl).origin
-        : `${window.location.protocol}//${window.location.host}`
+      let callbackOrigin = `${window.location.protocol}//${window.location.host}`
+      if (isCurrentDesktop && transport?.streamBaseUrl !== undefined) {
+        try { callbackOrigin = new URL(transport.streamBaseUrl).origin } catch {}
+      } else if (callbackOrigin.startsWith('tauri://') || callbackOrigin.startsWith('http://tauri.') || !callbackOrigin.startsWith('http')) {
+        callbackOrigin = 'http://127.0.0.1:3000'
+      }
       const request = async () => {
         const result = await ctx.remote.account.startSignIn(client(),
           callbackOrigin,

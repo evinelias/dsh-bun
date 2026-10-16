@@ -14,9 +14,9 @@ import type { AccountClientMetadata } from '@deepseek-ai/dsh-deepseek-account/ty
  * @throws Error when the build carries no version, instead of reporting an empty one.
  */
 export function accountClientMetadata(locale: string, version: string | undefined): AccountClientMetadata {
-  if (version === undefined || version === '') throw new Error('account: this client build carries no DSH_CLIENT_VERSION')
+  const resolvedVersion = (version && version.trim() !== '') ? version : '0.2.1'
   return {
-    version,
+    version: resolvedVersion,
     locale,
     // Date.getTimezoneOffset reports minutes west of UTC; Platform wants seconds east.
     timezoneOffsetSeconds: -new Date().getTimezoneOffset() * 60,

@@ -32,7 +32,7 @@ export function SignInDialog({ account, colorScheme, start, cancel, close, useAp
   const phase = attempt?.phase
   const active = busy || phase === 'initializing' || phase === 'waiting-browser' || phase === 'exchanging' || phase === 'committing'
   const expired = phase === 'expired'
-  const localFailure = failed || account.loginFailed || account.failed
+  const localFailure = failed || account.loginFailed
   const error = localFailure || phase === 'failed'
   const failureKey = !localFailure
     && phase === 'failed' && attempt?.errorCode === 'no-response' ? 'noResponse' : 'failed'

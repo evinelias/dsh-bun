@@ -186,11 +186,12 @@ async function namedSpecManifest(
   }
   if (parsed.kind !== 'registry') return undefined
   const pm = options.command ?? defaultPackageManager()
-  const viewArgs = pm === 'bun'
+  const isBunPm = pm === 'bun' || pm.toLowerCase().includes('bun')
+  const viewArgs = isBunPm
     ? [...options.args ?? [], 'info', parsed.spec, '--json']
     : [...options.args ?? [], 'view', parsed.spec, 'name', 'version', 'engines', 'peerDependencies', '--json', ...flags, '--config.fetch-retries=0']
   const viewed = await execa(pm, viewArgs, {
-    cwd: dir, env: environment, extendEnv: false, reject: false, stdin: 'ignore',
+    cwd: dir, env: { ...environment, ...(isBunPm ? { BUN_BE_BUN: '1' } : {}) }, extendEnv: false, reject: false, stdin: 'ignore',
     ...options.signal === undefined ? {} : { cancelSignal: options.signal },
     timeout: options.lookupTimeoutMs ?? LOOKUP_TIMEOUT_MS,
   })

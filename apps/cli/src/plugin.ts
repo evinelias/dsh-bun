@@ -1,7 +1,6 @@
 /** Profile package management and explicit, exact-version compatibility approvals. */
 import { runPluginCommand, runProfilePnpm, setProfileVersionExemption, type PackageOperationOptions } from '@deepseek-ai/dsh-plugin-manager/operations'
-import { INSTALL_ANCHOR } from './profile-boot.ts'
-import { DEFAULT_PROFILE_BUNDLES, initProfile, PROFILE_TEMPLATES, readProfileCompatibility, resolveProfileDir, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
+import { DEFAULT_PROFILE_BUNDLES, initProfile, PROFILE_TEMPLATES, readProfileCompatibility, resolveProfileDir, ensurePackageRootIndices, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
 import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
@@ -80,9 +79,9 @@ export async function runPlugin(profile: string, args: readonly string[], packag
   if (existsSync(join(dir, 'package.json'))) {
     for (const warning of readProfileCompatibility(dir).warnings) process.stderr.write(`dsh: warning: ${warning}\n`)
   }
-  const context = { profile, dir, installAnchor: INSTALL_ANCHOR, cwd: process.cwd() }
-  const isCompiled = typeof (globalThis as any).Bun !== 'undefined' && !basename(process.execPath).toLowerCase().startsWith('bun')
-  const defaultCmd = isCompiled ? process.execPath : (typeof (globalThis as any).Bun !== 'undefined' ? 'bun' : 'pnpm')
+  const isBun = typeof (globalThis as Record<string, unknown>).Bun !== 'undefined'
+  const isCompiled = isBun && !basename(process.execPath).toLowerCase().startsWith('bun')
+  const defaultCmd = isCompiled ? process.execPath : (isBun ? 'bun' : 'pnpm')
   const options: PackageOperationOptions = {
     command: defaultCmd,
     ...packageManager,
@@ -99,6 +98,9 @@ export async function runPlugin(profile: string, args: readonly string[], packag
       return runProfilePnpm(context, args, options)
     }, { waitMs: 120000 })
     : await runPluginCommand(context, args, options)
+  if (result.exitCode === 0) {
+    ensurePackageRootIndices(join(dir, 'node_modules'))
+  }
   if (result.exitCode === 127) {
     const pkg = options.command ?? defaultCmd
     process.stderr.write(`dsh: ${pkg} was not found; install ${pkg} and make it available on PATH.\n`)

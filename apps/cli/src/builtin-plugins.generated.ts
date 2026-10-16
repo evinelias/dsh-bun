@@ -234,4 +234,5 @@ export const BUILTIN_PLUGINS: Record<string, () => Promise<unknown>> = {
   '@deepseek-ai/dsh-working-directory': () => import('@deepseek-ai/dsh-working-directory'),
   '@deepseek-ai/dsh-workspace': () => import('@deepseek-ai/dsh-workspace'),
   '@deepseek-ai/dsh-workspace-changes': () => import('@deepseek-ai/dsh-workspace-changes'),
+  'dshmarket': () => import('dshmarket'),
 }

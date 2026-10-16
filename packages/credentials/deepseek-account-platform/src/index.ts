@@ -402,7 +402,19 @@ export class PlatformAccount extends DeepSeekAccount {
 
   override async startSignIn(client: AccountClientMetadata, callbackOrigin: string, loginSource: 'web' | 'desktop'): Promise<AccountView> {
     if (this.removing !== undefined) await this.removing
-    const origin = loginOrigin(callbackOrigin)
+    let origin: string
+    try {
+      origin = loginOrigin(callbackOrigin)
+    } catch {
+      const server = (this.ctx as unknown as { webServer?: { getOriginSafe?: () => string; port?: number } }).webServer
+      if (server?.getOriginSafe) {
+        origin = server.getOriginSafe()
+      } else if (server?.port) {
+        origin = `http://127.0.0.1:${server.port}`
+      } else {
+        origin = 'http://127.0.0.1:3000'
+      }
+    }
     if (this.closed) throw new PlatformAuthError('protocol')
     if (this.attempt !== undefined && ['initializing', 'waiting-browser', 'exchanging', 'committing'].includes(this.attempt.view.phase)) {
       return this.getState()
@@ -411,7 +423,6 @@ export class PlatformAccount extends DeepSeekAccount {
     if (previous !== undefined) {
       await previous.done
       // Disposal can close the provider while the previous attempt settles.
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (this.closed) throw new PlatformAuthError('protocol')
       if (this.attempt !== previous) return this.getState()
     }

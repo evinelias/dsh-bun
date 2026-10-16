@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import { clientBuildEnvironmentDefines } from '../../scripts/client-build-environment.ts'
+import { clientBuildEnvironmentDefines, repositoryClientBuildEnvironment } from '../../scripts/client-build-environment.ts'
 import { productWebBundleIsolation } from './product-isolation.ts'
 import { katexWoff2Fonts } from './katex-fonts.ts'
 
@@ -251,7 +251,7 @@ export default defineConfig({
     ],
   },
   define: {
-    ...clientBuildEnvironmentDefines(process.env),
+    ...clientBuildEnvironmentDefines(repositoryClientBuildEnvironment(src('../..'), process.env)),
     // vendored loader internal.ts: fromInternal() probes the Node major —
     // "0.0.0" takes neither branch, returning undefined (exactly the empty
     // internal slot the shell boot fills with the client module loader).

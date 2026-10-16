@@ -28,6 +28,7 @@ import {
   PROFILE_PATCH_FILENAME,
   PROFILE_TEMPLATES,
   resolveProfileDir,
+  ensurePackageRootIndices,
   type ProfileContext,
   type Profile,
   type RuntimeResolution,
@@ -360,6 +361,8 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       cwd: process.cwd(), home: resolveDshHome(),
       overlays: composed.overlays, telemetryDisabledEnv: process.env.DSH_TELEMETRY_DISABLED,
     }
+    ensurePackageRootIndices(join(composed.profile.dir, 'node_modules'))
+    ensurePackageRootIndices(join(resolveDshHome(), 'node_modules'))
     const ctx = await boot(NAME, rootConfig, readProfilePatches(NAME, profileContext, composed.profile), async (hostCtx) => {
       app.current = hostCtx
       if (hostCtx.loader?.builtins) {
