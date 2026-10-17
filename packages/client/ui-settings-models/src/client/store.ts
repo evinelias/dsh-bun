@@ -50,7 +50,7 @@ export function joinProviderDirectory(
   const declared = new Set(directory.map(entry => entry.provider))
   const rows: ProviderDirectoryEntry[] = directory.map(entry => ({
     provider: entry.provider,
-    displayName: entry.displayName,
+    displayName: entry.provider === 'openrouter' && entry.displayName === 'openrouter' ? 'OpenRouter' : entry.displayName,
     settingsNs: entry.settingsNs,
     settingsPath: [...entry.settingsPath],
     active: active.has(entry.provider),
@@ -64,15 +64,15 @@ export function joinProviderDirectory(
     if (declared.has(provider.id)) continue
     rows.push({
       provider: provider.id,
-      displayName: provider.name,
+      displayName: provider.id === 'openrouter' ? 'OpenRouter' : provider.name,
       settingsNs: '',
       settingsPath: [],
       active: true,
     })
   }
   return rows.toSorted((left, right) =>
-    (left.provider === 'deepseek-account' ? 0 : left.provider === 'deepseek-official' ? 1 : 2)
-      - (right.provider === 'deepseek-account' ? 0 : right.provider === 'deepseek-official' ? 1 : 2))
+    (left.provider === 'deepseek-account' ? 0 : left.provider === 'deepseek-official' ? 1 : left.provider === 'openrouter' ? 2 : 3)
+      - (right.provider === 'deepseek-account' ? 0 : right.provider === 'deepseek-official' ? 1 : right.provider === 'openrouter' ? 2 : 3))
 }
 
 /** One provider row the page renders. */

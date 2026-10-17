@@ -272,7 +272,9 @@ export async function discoverModels(
 ): Promise<readonly LlmDiscoveredModel[]> {
   // A catalog route already has its answer, and a better one: the installed
   // entries carry context windows and output caps no listing endpoint reports.
-  if (request.provider !== undefined) {
+  // OpenRouter is exempt: its live endpoint publishes real-time model catalogs
+  // and capacities, so live discovery is attempted first with catalog fallback.
+  if (request.provider !== undefined && request.provider !== 'openrouter') {
     const installed = catalogModels(request.provider)
     if (installed.size > 0) {
       return [...installed.values()].map(model => ({
@@ -284,7 +286,9 @@ export async function discoverModels(
       }))
     }
   }
-  if (request.baseURL === undefined || request.baseURL.length === 0) {
+  const isOpenRouter = request.provider === 'openrouter'
+  const baseURL = request.baseURL ?? (isOpenRouter ? 'https://openrouter.ai/api/v1' : undefined)
+  if (baseURL === undefined || baseURL.length === 0) {
     throw new LlmError(
       `pi-ai ships no catalog for provider "${request.provider ?? ''}", so its models can only come from its`
       + " endpoint; set a baseURL, or enter this provider's models by hand",
@@ -304,7 +308,7 @@ export async function discoverModels(
       'DISCOVERY_UNSUPPORTED',
     )
   }
-  const url = listingUrl(request.baseURL, api)
+  const url = listingUrl(baseURL, api)
   // A key typed into the form wins: it may replace the stored key that is
   // failing. The stored profile is asked past the catalog and protocol checks,
   // and its credential resolver remains lazy so a typed key cannot fail over a
@@ -324,6 +328,10 @@ export async function discoverModels(
       headers.set('authorization', `Bearer ${apiKey}`)
     }
     for (const [name, value] of Object.entries(attributionHeaders())) headers.set(name, value)
+    if (isOpenRouter || url.includes('openrouter.ai')) {
+      if (!headers.has('http-referer')) headers.set('http-referer', 'https://deepseek.com')
+      if (!headers.has('x-title')) headers.set('x-title', 'DeepSeek Harness')
+    }
     response = await fetch(url, {
       method: 'GET',
       headers,
@@ -333,9 +341,33 @@ export async function discoverModels(
     if (request.signal?.aborted) {
       throw new LlmError('model discovery aborted by caller', 'ABORTED', { cause: error })
     }
+    if (isOpenRouter && (request.baseURL === undefined || request.baseURL === 'https://openrouter.ai/api/v1')) {
+      const installed = catalogModels('openrouter')
+      if (installed.size > 0) {
+        return [...installed.values()].map(model => ({
+          id: model.id,
+          name: model.name,
+          contextWindow: model.contextWindow,
+          maxTokens: model.maxTokens,
+          inputModalities: [...model.input],
+        }))
+      }
+    }
     throw new LlmError(`could not reach ${url}`, 'DISCOVERY_FAILED', { cause: error })
   }
   if (!response.ok) {
+    if (isOpenRouter && (request.baseURL === undefined || request.baseURL === 'https://openrouter.ai/api/v1') && response.status >= 500) {
+      const installed = catalogModels('openrouter')
+      if (installed.size > 0) {
+        return [...installed.values()].map(model => ({
+          id: model.id,
+          name: model.name,
+          contextWindow: model.contextWindow,
+          maxTokens: model.maxTokens,
+          inputModalities: [...model.input],
+        }))
+      }
+    }
     throw new LlmError(
       `${url} answered ${response.status}${response.status === 401 || response.status === 403 ? '; check the API key' : ''}`,
       'DISCOVERY_FAILED',

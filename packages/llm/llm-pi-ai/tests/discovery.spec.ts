@@ -549,3 +549,24 @@ describe('recorded provider listings', () => {
     await expect(ctx.llm.discoverModels('llm-pi-ai', { baseURL: server.url, api })).resolves.toEqual(models)
   })
 })
+
+describe('openrouter live discovery', () => {
+  it('interrogates endpoint over the wire when provider is openrouter', async () => {
+    const server = await listingServer({
+      body: JSON.stringify({
+        data: [
+          { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', context_length: 200_000, top_provider: { max_completion_tokens: 64_000 } },
+          { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', context_length: 128_000, top_provider: { max_completion_tokens: 32_000 } },
+        ],
+      }),
+    })
+    const ctx = await harness()
+    const models = await ctx.llm.discoverModels('llm-pi-ai', { provider: 'openrouter', baseURL: server.url, apiKey: 'sk-or-v1-test' })
+    expect(models).toEqual([
+      { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', contextWindow: 200_000, maxTokens: 64_000 },
+      { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', contextWindow: 128_000, maxTokens: 32_000 },
+    ])
+    expect(server.paths).toEqual(['/models'])
+    expect(server.headers[0]?.authorization).toBe('Bearer sk-or-v1-test')
+  })
+})

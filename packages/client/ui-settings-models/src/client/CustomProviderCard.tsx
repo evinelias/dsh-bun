@@ -215,6 +215,21 @@ export function CustomProviderCard(props: CustomProviderCardProps): ReactNode {
 
   return (
     <div className={styles['editor']}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button
+          type="button"
+          className={styles['linkButton']}
+          disabled={profileDisabled}
+          onClick={() => {
+            setRoute('openrouter')
+            setDisplayName('OpenRouter')
+            setBaseURL('https://openrouter.ai/api/v1')
+            if (protocols.includes('openai-completions')) setProtocol('openai-completions')
+          }}
+        >
+          {t('fillOpenRouterPreset')}
+        </button>
+      </div>
       <div className={styles['field']}>
         <span className={styles['fieldLabel']}>{t('customRoute')}</span>
         <input

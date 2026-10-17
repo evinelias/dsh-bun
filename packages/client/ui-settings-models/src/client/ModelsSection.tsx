@@ -371,6 +371,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
     const namespace = state.namespaces.get(row.entry.settingsNs)
     return namespace === undefined || row.configured ? [] : [{ row, namespace }]
   })
+  const openrouterRow = addable.find(candidate => candidate.row.entry.provider === 'openrouter')
   // Hand-declared routes live in the pi-ai namespace, which is also the only
   // one whose schema names the protocols one may speak; without it mounted
   // there is nothing to declare and the mode is not offered.
@@ -694,7 +695,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             ? (
               // One entry for both ways to gain a provider; the card behind it
               // splits them. Full width, so it lines up with the rows above.
-              <div className={styles['addActions']}>
+              <div className={styles['addActions']} style={{ gap: 8 }}>
                 <button
                   type="button"
                   className={styles['addButton']}
@@ -713,6 +714,26 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                   <IconPlusOutlineRegular size={14} />
                   {t('add')}
                 </button>
+                {openrouterRow !== undefined
+                  ? (
+                    <button
+                      type="button"
+                      className={styles['addButton']}
+                      disabled={!state.writable || state.status !== 'ready'}
+                      onClick={() => {
+                        if (controller.store.getSnapshot().status !== 'ready') return
+                        setSavedTarget(undefined)
+                        setEditing(targetOf(openrouterRow.row))
+                        setAddMode('catalog')
+                        setVisited(new Set(['catalog']))
+                        setAddOpen(true)
+                      }}
+                    >
+                      <IconPlusOutlineRegular size={14} />
+                      {t('addOpenRouter')}
+                    </button>
+                  )
+                  : null}
               </div>
             )
             : null}
