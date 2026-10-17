@@ -220,7 +220,7 @@ export class DesktopOnboardingController {
       creditFunded: this.creditFunded ?? false,
       visible: !done && signedIn && !unavailable,
       status: this.completing || (this.saving && this.draft === undefined) ? 'saving' : unavailable || readFailed || accountFailed || this.error !== null ? 'error'
-        : host.status === 'loading' || account === undefined ? 'loading' : 'ready',
+        : host.status === 'loading' || (!done && account === undefined) ? 'loading' : 'ready',
       error: unavailable || readFailed ? 'settings' : this.error,
     }
     if (!shallowEqual(previous, next)) this.state.set(next)

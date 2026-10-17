@@ -155,6 +155,7 @@ export function apply(ctx: Context): void {
         }
       } catch (_error) {
         if (!disposed) {
+          publish({ ...snapshot, failed: true })
           await new Promise(r => setTimeout(r, 1000))
         }
       }

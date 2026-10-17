@@ -37,7 +37,7 @@ export function DesktopOnboardingEntry({ useOnboarding, useAccount, setVisible, 
   }, [state.visible])
   const [lastVisible, setLastVisible] = useState(state.visible ? state : null)
   const done = !state.visible && state.progress.step === 'done'
-    && account.view?.status === 'credential-stored'
+    && (state.progress.completion === 'api-key' || account.view?.status === 'credential-stored' || account.view?.status === 'signed-out' || account.view === undefined)
   const pendingCompletion = done && state.status === 'saving'
   const completed = done && state.status === 'ready'
   const exiting = completed && lastVisible !== null
@@ -55,9 +55,9 @@ export function DesktopOnboardingEntry({ useOnboarding, useAccount, setVisible, 
   }, [exiting])
 
   const displayed = state.visible ? state : exiting || pendingCompletion ? lastVisible : null
-  const visible = displayed !== null || state.status === 'loading'
+  const visible = displayed !== null || (state.status === 'loading' && state.progress.step !== 'done')
   useLayoutEffect(() => { setVisible(visible) }, [setVisible, visible])
-  if (displayed === null) return state.status === 'loading'
+  if (displayed === null) return (state.status === 'loading' && state.progress.step !== 'done')
     ? <OnboardingSurface><div role="status">{props.t('onboardingLoading')}</div></OnboardingSurface> : null
   return <DesktopOnboarding {...props} locale={locale} state={pendingCompletion ? { ...displayed, status: 'saving' } : displayed}
     account={account} exiting={exiting} />
