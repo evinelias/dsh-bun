@@ -162,7 +162,7 @@ function main(): void {
   // 4. Compile standalone sidecar binary
   const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
   console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
-  execSync(`bun build apps/cli/src/bin.ts --compile ${targetFlag} --outfile "${sidecarPath}"`, {
+  execSync(`bun build apps/cli/src/bin.ts --compile --minify ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
     stdio: 'inherit',
   })
@@ -199,23 +199,18 @@ function main(): void {
     }
   }
 
-  // Bundle ripgrep executable adjacent to binaries so glob/grep search works 100% out of the box
+  // Bundle single ripgrep executable adjacent to binaries so glob/grep search works 100% out of the box
   const rgSource = findRipgrepBinary(root, isWindows)
   const rgName = isWindows ? 'rg.exe' : 'rg'
   if (rgSource) {
     console.log(`[+] Bundling ripgrep from: ${rgSource}`)
     safeCp(rgSource, join(binariesDir, rgName))
-    safeCp(rgSource, join(binariesDir, `dsh-bun-rg${ext}`))
     safeCp(rgSource, join(distDir, rgName))
-    safeCp(rgSource, join(distDir, `dsh-bun-rg${ext}`))
     if (isWindows) {
-      safeCp(rgSource, join(binariesDir, 'dsh-bun-x86_64-pc-windows-msvc-rg.exe'))
-      safeCp(rgSource, join(binariesDir, 'dsh-bun-x86_64-pc-windows-gnu-rg.exe'))
       const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
       if (existsSync(installedDir)) {
         try {
-          safeCp(rgSource, join(installedDir, 'rg.exe'))
-          safeCp(rgSource, join(installedDir, 'dsh-bun-rg.exe'))
+          safeCp(rgSource, join(installedDir, rgName))
           console.log(`[+] Updated installed ripgrep binary in ${installedDir}`)
         } catch {}
       }

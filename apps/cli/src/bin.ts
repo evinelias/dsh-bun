@@ -80,5 +80,8 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
 }
 
 if (import.meta.main) {
-  await runCli()
+  runCli().catch((err) => {
+    console.error(err)
+    process.exit(1)
+  })
 }

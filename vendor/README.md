@@ -62,6 +62,8 @@ Keep this log exhaustive — every divergence from upstream must be listed.
 
 25. **`loader/src/config/tree.ts` profile plugin resolution & root index auto-proxy**: added `$DSH_HOME`, profile directories (`profiles/*`), `this.ctx.baseUrl`, and ancestor directories to `candidateRoots` in `EntryTree.import()` fallback resolution, self-healing root index generation for packages with nested entries, and browser environment guards for Node dynamic imports, allowing community and profile-installed plugins (such as `dshmarket`) to be dynamically resolved and imported under Bun standalone runtimes.
 
+26. **`loader/src/config/tree.ts` lazy builtin thunk unwrapping**: supports dynamic lazy loader thunks (`() => import(...)`) in `this.ctx.loader.builtins`, unwrapping functions without prototype before returning the module Promise, enabling packages in the builtin registry to remain unparsed and unexecuted in memory until the active profile loads them.
+
 ## Sync procedure
 
 To update a vendored package from upstream:

@@ -111,7 +111,8 @@ export abstract class EntryTree {
   /** Import a plugin module from a specifier or `cordis:` builtin. */
   import(name: string, getOuterStack?: () => string[]) {
     if (name.startsWith('cordis:')) {
-      return this.ctx.loader.builtins[name.slice(7)]
+      const builtin = this.ctx.loader.builtins[name.slice(7)]
+      return typeof builtin === 'function' && !builtin.prototype ? builtin() : builtin
     }
     const builtin = this.ctx.loader.builtins[name]
     if (builtin !== undefined) {

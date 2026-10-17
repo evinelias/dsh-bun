@@ -566,6 +566,13 @@ export class WebServer extends Service {
           this.server.on('error', (err) => { this.ctx.logger.error(err) })
           this.listenedPort = (this.server.address() as AddressInfo).port
           resolve()
+          // Give the event loop 1 tick to settle, then purge initialization memory
+          setTimeout(() => {
+            const globalBun = (globalThis as unknown as { Bun?: { gc?: (sync?: boolean) => void } }).Bun
+            if (typeof globalBun !== 'undefined' && typeof globalBun.gc === 'function') {
+              globalBun.gc(true) // Synchronous JSC GC + mimalloc heap sweep
+            }
+          }, 1500)
         })
       })
 

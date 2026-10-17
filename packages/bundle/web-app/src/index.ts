@@ -176,7 +176,7 @@ function spawnBrowserLauncher(url: string): ChildProcess {
 
 /** Hand one URL to the operating system's default browser. */
 async function openBrowser(url: string): Promise<void> {
-  if (!BROWSER_OPENER_MODULE || Boolean((process as unknown as { isBun?: boolean }).isBun) || typeof Bun !== 'undefined') {
+  if (!BROWSER_OPENER_MODULE || Boolean((process as unknown as { isBun?: boolean }).isBun) || typeof (globalThis as unknown as { Bun?: unknown }).Bun !== 'undefined') {
     if (process.platform === 'win32') {
       spawn('cmd.exe', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref()
     } else if (process.platform === 'darwin') {
@@ -272,6 +272,13 @@ export function apply(ctx: Context, config: Config): void {
         if (config.printUrl) {
           console.log(`dsh web: ${authenticatedUrl}`)
         }
+        // Give the event loop 1 tick to settle, then purge initialization memory
+        setTimeout(() => {
+          const globalBun = (globalThis as unknown as { Bun?: { gc?: (sync?: boolean) => void } }).Bun
+          if (typeof globalBun !== 'undefined' && typeof globalBun.gc === 'function') {
+            globalBun.gc(true) // Synchronous JSC GC + mimalloc heap sweep
+          }
+        }, 1500)
         if (handoffBrowser) {
           console.log('dsh web: opening the default browser; pass --no-open to disable')
           void internals.openBrowser(authenticatedUrl).catch((error: unknown) => {
