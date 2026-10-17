@@ -55,6 +55,7 @@ The following benchmarks demonstrate the measured runtime performance and distri
 | **Cold CLI Startup (`--help`)** | **~400 ms** | Native compiled executable execution with instant CLI argument parsing |
 | **Headless Boot to HTTP 200** | **~1,800–2,100 ms** | Full Cordis kernel + Elysia HTTP routing + auth token handshake |
 | **Idle Memory Footprint (RSS)** | **~22–29 MB** | Post-sweep Working Set trimming via `Bun.gc(true)` + Win32 FFI trim hook |
+| **HTTP Concurrency Throughput** | **~1,400–1,500 req/sec** | High-throughput Elysia routing on native Bun HTTP engine (500 parallel requests) |
 | **Desktop Shell Executable** | **3.91 MB** (`dsh-desktop.exe`) | **~60x smaller** native Tauri v2 shell vs ~230 MB+ Electron runtime |
 | **Self-Contained CLI Executable** | **120.36 MB** (`dist/dsh-bun.exe`) | Single self-contained binary embedding all 2,800+ modules and 230+ plugins |
 | **Host Runtime Prerequisites** | **Zero host dependencies** | Zero Node.js, pnpm, or Bun required on user machines |

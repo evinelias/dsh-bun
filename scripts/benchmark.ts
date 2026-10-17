@@ -7,6 +7,7 @@ interface BenchmarkResults {
   cliHelpMs: number
   serverBootToFirst200Ms: number
   idleRssMb: number
+  throughputRps: number
   cliBinaryBytes: number
   cliBinaryMb: number
   desktopBinaryBytes: number
@@ -53,7 +54,7 @@ async function measureCliHelp(): Promise<number> {
   return Math.round(avg * 10) / 10
 }
 
-async function measureServerBootAndMemory(): Promise<{ bootMs: number; rssMb: number }> {
+async function measureServerBootAndMemory(): Promise<{ bootMs: number; rssMb: number; throughputRps: number }> {
   return new Promise((resolve, reject) => {
     const start = performance.now()
     const proc = spawn(cliBinaryPath, ['web', '--no-open', '--port', '0'], {
@@ -100,11 +101,23 @@ async function measureServerBootAndMemory(): Promise<{ bootMs: number; rssMb: nu
               rss = await getProcessRssMb(proc.pid)
             }
 
+            // 3. HTTP Concurrency Stress Test: 500 requests
+            const reqCount = 500
+            const stressStart = performance.now()
+            const promises: Promise<unknown>[] = []
+            for (let i = 0; i < reqCount; i++) {
+              promises.push(fetch(`${origin}/`, { headers: cookieHeader ? { Cookie: cookieHeader } : {} }))
+            }
+            await Promise.all(promises)
+            const stressDuration = (performance.now() - stressStart) / 1000
+            const throughputRps = Math.round((reqCount / stressDuration) * 10) / 10
+
             clearTimeout(timeout)
             proc.kill()
             resolve({
               bootMs: Math.round(bootTime * 10) / 10,
               rssMb: rss,
+              throughputRps,
             })
           }
         } catch (err) {
@@ -142,11 +155,12 @@ async function main() {
   const cliHelpMs = await measureCliHelp()
   console.log(`      Average CLI cold start: ${cliHelpMs} ms`)
 
-  // 2. Measure Server boot to first HTTP 200 + Idle RSS
-  console.log('[2/3] Measuring headless server boot to first HTTP 200 OK & idle memory...')
-  const { bootMs, rssMb } = await measureServerBootAndMemory()
+  // 2. Measure Server boot to first HTTP 200 + Idle RSS + Throughput
+  console.log('[2/3] Measuring headless server boot to first HTTP 200 OK, idle memory & throughput...')
+  const { bootMs, rssMb, throughputRps } = await measureServerBootAndMemory()
   console.log(`      Server boot to 200 OK: ${bootMs} ms`)
   console.log(`      Idle memory footprint (RSS): ${rssMb} MB`)
+  console.log(`      HTTP request throughput: ${throughputRps} req/s (500 concurrent requests)`)
 
   // 3. Binary sizes
   console.log('[3/3] Inspecting binary sizes on disk...')
@@ -169,6 +183,7 @@ async function main() {
     cliHelpMs,
     serverBootToFirst200Ms: bootMs,
     idleRssMb: rssMb,
+    throughputRps,
     cliBinaryBytes: cliStat.size,
     cliBinaryMb: cliMb,
     desktopBinaryBytes: desktopBytes,
@@ -181,6 +196,7 @@ async function main() {
   console.log(`| **Cold CLI Startup (\`--help\`)** | **${results.cliHelpMs} ms** | Native Bun executable execution, instant CLI parsing |`)
   console.log(`| **Headless Boot to HTTP 200** | **${results.serverBootToFirst200Ms} ms** | Full Cordis kernel + Elysia HTTP routing + auth handshake |`)
   console.log(`| **Idle Memory Footprint (RSS)** | **${results.idleRssMb} MB** | Post-sweep Working Set trimming via \`Bun.gc(true)\` + Win32 FFI |`)
+  console.log(`| **HTTP Concurrency Throughput** | **${results.throughputRps} req/s** | Elysia router on Bun HTTP engine under 500 parallel requests |`)
   console.log(`| **Desktop Shell Executable** | **${results.desktopBinaryMb} MB** (Tauri v2) | **~60x smaller** than Electron (~230 MB+ runtime footprint eliminated) |`)
   console.log(`| **Self-Contained CLI Executable** | **${results.cliBinaryMb} MB** | Zero host Node.js / pnpm / Bun required for end users |`)
   console.log('\n*Note: Upstream Node/Electron benchmarks vary significantly across environments; dsh-bun metrics measured on Windows x64 (Bun 1.3.5).*\n')
