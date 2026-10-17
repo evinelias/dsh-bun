@@ -588,7 +588,7 @@ export class PlatformAccount extends DeepSeekAccount {
       if (attempt.loginSource === 'desktop' || process.env.DSH_DESKTOP === '1' || process.execPath.toLowerCase().includes('dsh-bun')) {
         try {
           if (platform() === 'win32') {
-            spawn('cmd.exe', ['/c', 'start', '', authorizeUrl.replaceAll('&', '^&')], { detached: true, stdio: 'ignore' }).unref()
+            spawn('cmd.exe', ['/c', 'start', '', authorizeUrl], { detached: true, stdio: 'ignore' }).unref()
           } else if (platform() === 'darwin') {
             spawn('open', [authorizeUrl], { detached: true, stdio: 'ignore' }).unref()
           } else {

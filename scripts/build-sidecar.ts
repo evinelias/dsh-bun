@@ -162,7 +162,7 @@ function main(): void {
   // 4. Compile standalone sidecar binary
   const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
   console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
-  execSync(`bun build apps/cli/src/bin.ts --compile --minify ${targetFlag} --outfile "${sidecarPath}"`, {
+  execSync(`bun build apps/cli/src/bin.ts --compile ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
     stdio: 'inherit',
   })
