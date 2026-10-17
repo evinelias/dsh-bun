@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@v5.0.0
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7.0.0
         with:
           node-version: '24'
@@ -61,7 +61,7 @@ jobs:
           persist-credentials: false
           clean: false
           path: desktop-publisher
-      - uses: pnpm/action-setup@v5.0.0
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: desktop-publisher/package.json
           dest: ${{ runner.temp }}/publish-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
@@ -102,7 +102,7 @@ jobs:
           persist-credentials: false
           clean: false
           path: desktop-publisher
-      - uses: pnpm/action-setup@v5.0.0
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: desktop-publisher/package.json
           dest: ${{ runner.temp }}/publish-pnpm-${{ github.run_id }}-${{ github.run_attempt }}
