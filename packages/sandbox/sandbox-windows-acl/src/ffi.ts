@@ -26,6 +26,17 @@ type Koffi = typeof import('koffi')['default']
 type Ptr = ReturnType<Koffi['pointer']>
 
 const requireKoffi = createLazyRequire<Koffi>('koffi', import.meta.url)
+
+/** Return whether Koffi is loadable in the current runtime environment. */
+export function isKoffiAvailable(): boolean {
+  try {
+    requireKoffi()
+    return true
+  } catch {
+    return false
+  }
+}
+
 let cachedTypes: { PVOID: Ptr; PPVOID: Ptr } | undefined
 
 function ffiTypes(): { PVOID: Ptr; PPVOID: Ptr } {

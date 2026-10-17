@@ -106,10 +106,14 @@ jobs:
           prerelease: false
           args: --target ${{ matrix.rust_target }}
 
-      - name: Upload Standalone Headless CLI Binary to Release
+      - name: Upload Standalone Headless CLI Binary and Ripgrep to Release
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp ./apps/desktop/src-tauri/binaries/dsh-bun-${{ matrix.rust_target }}${{ matrix.ext }} ./dsh-bun-${{ matrix.rust_target }}${{ matrix.ext }}
           gh release upload ${{ github.ref_name }} ./dsh-bun-${{ matrix.rust_target }}${{ matrix.ext }} --clobber
+          if [ -f "./apps/desktop/src-tauri/binaries/rg${{ matrix.ext }}" ]; then
+            cp ./apps/desktop/src-tauri/binaries/rg${{ matrix.ext }} ./rg-${{ matrix.rust_target }}${{ matrix.ext }}
+            gh release upload ${{ github.ref_name }} ./rg-${{ matrix.rust_target }}${{ matrix.ext }} --clobber
+          fi

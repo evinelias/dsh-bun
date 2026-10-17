@@ -48,6 +48,46 @@ function copyClientPlugins(targetDir: string, rootDir: string): number {
   return count
 }
 
+function findRipgrepBinary(rootDir: string, isWin: boolean): string | undefined {
+  const rgName = isWin ? 'rg.exe' : 'rg'
+
+  // 1. Search in node_modules for @vscode ripgrep prebuilts
+  try {
+    const bunModules = join(rootDir, 'node_modules', '.bun')
+    if (existsSync(bunModules)) {
+      for (const entry of readdirSync(bunModules)) {
+        if (entry.includes('ripgrep')) {
+          const checkBin = join(bunModules, entry, 'node_modules', '@vscode')
+          if (existsSync(checkBin)) {
+            for (const sub of readdirSync(checkBin)) {
+              const full = join(checkBin, sub, 'bin', rgName)
+              if (existsSync(full)) return full
+            }
+          }
+        }
+      }
+    }
+  } catch {}
+
+  const standardPaths = [
+    join(rootDir, 'node_modules', '@vscode', 'ripgrep', 'bin', rgName),
+    join(rootDir, 'node_modules', '@vscode', isWin ? 'ripgrep-win32-x64' : 'ripgrep-linux-x64', 'bin', rgName),
+  ]
+  for (const p of standardPaths) {
+    if (existsSync(p)) return p
+  }
+
+  // 2. Check system PATH
+  const pathDirs = (process.env.PATH ?? '').split(isWin ? ';' : ':')
+  for (const dir of pathDirs) {
+    if (!dir) continue
+    const candidate = join(dir, rgName)
+    if (existsSync(candidate)) return candidate
+  }
+
+  return undefined
+}
+
 function getTargetTriple(): string {
   if (process.env.TARGET_TRIPLE) {
     return process.env.TARGET_TRIPLE.trim()
@@ -157,6 +197,31 @@ function main(): void {
         console.warn(`[!] Could not update installed sidecar binary (in use?): ${e instanceof Error ? e.message : String(e)}`)
       }
     }
+  }
+
+  // Bundle ripgrep executable adjacent to binaries so glob/grep search works 100% out of the box
+  const rgSource = findRipgrepBinary(root, isWindows)
+  const rgName = isWindows ? 'rg.exe' : 'rg'
+  if (rgSource) {
+    console.log(`[+] Bundling ripgrep from: ${rgSource}`)
+    safeCp(rgSource, join(binariesDir, rgName))
+    safeCp(rgSource, join(binariesDir, `dsh-bun-rg${ext}`))
+    safeCp(rgSource, join(distDir, rgName))
+    safeCp(rgSource, join(distDir, `dsh-bun-rg${ext}`))
+    if (isWindows) {
+      safeCp(rgSource, join(binariesDir, 'dsh-bun-x86_64-pc-windows-msvc-rg.exe'))
+      safeCp(rgSource, join(binariesDir, 'dsh-bun-x86_64-pc-windows-gnu-rg.exe'))
+      const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
+      if (existsSync(installedDir)) {
+        try {
+          safeCp(rgSource, join(installedDir, 'rg.exe'))
+          safeCp(rgSource, join(installedDir, 'dsh-bun-rg.exe'))
+          console.log(`[+] Updated installed ripgrep binary in ${installedDir}`)
+        } catch {}
+      }
+    }
+  } else {
+    console.warn('[!] Ripgrep binary not found; glob/grep tools will search system PATH')
   }
 
   // 5. Copy web-dist adjacent to binaries so the sidecar is 100% self-contained

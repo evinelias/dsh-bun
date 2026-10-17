@@ -170,11 +170,24 @@ let rgPathPromise: Promise<string> | undefined
  */
 export function resolveRgPath(): Promise<string> {
   rgPathPromise ??= Promise.resolve().then(async () => {
-    const executable = parse(process.execPath)
-    const executableSidecar = process.platform === 'win32'
-      ? join(executable.dir, `${executable.name}-rg.exe`)
-      : `${process.execPath}-rg`
-    if ('pkg' in process && existsSync(executableSidecar)) return executableSidecar
+    if ('pkg' in process) {
+      const executable = parse(process.execPath)
+      const executableSidecar = process.platform === 'win32'
+        ? join(executable.dir, `${executable.name}-rg.exe`)
+        : `${process.execPath}-rg`
+      if (existsSync(executableSidecar)) return executableSidecar
+
+      const bareRg = process.platform === 'win32' ? 'rg.exe' : 'rg'
+      const adjacentRg = join(executable.dir, bareRg)
+      if (existsSync(adjacentRg)) return adjacentRg
+
+      const adjacentBinariesRg = join(executable.dir, 'binaries', bareRg)
+      if (existsSync(adjacentBinariesRg)) return adjacentBinariesRg
+
+      const cwdRg = join(process.cwd(), bareRg)
+      if (existsSync(cwdRg)) return cwdRg
+    }
+
     const dependency = (await import('@vscode/ripgrep')).rgPath
     return process.versions.electron === undefined
       ? dependency
@@ -253,7 +266,6 @@ export async function runRipgrep(
     // above and this call (or when the platform-package resolution rejects).
     // The static narrowing that proves this re-check "always false" cannot
     // see AbortSignal state changes.
-    // oxlint-disable-next-line typescript/no-unnecessary-condition
     if (exec.signal.aborted) {
       throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
     }
@@ -272,7 +284,6 @@ export async function runRipgrep(
   }
   // The signal can abort while the spawn is awaited; the static narrowing that
   // proves this re-check "always false" cannot see AbortSignal state changes.
-  // oxlint-disable-next-line typescript/no-unnecessary-condition
   if (exec.signal.aborted) {
     throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
   }

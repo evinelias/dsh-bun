@@ -37,7 +37,7 @@ import z from '@deepseek-ai/schemastery'
 import { SandboxProvider, SandboxUnavailableError, canonicalPath } from '@deepseek-ai/dsh-sandbox'
 import type { ConfinedArgv, ConfinedSandboxMode, RunnerFailureRule, SandboxEnforcement, SandboxPolicy } from '@deepseek-ai/dsh-sandbox'
 import type { SessionId } from '@deepseek-ai/dsh-session'
-import { AclWriteGrant, assertTempRootOutsideWorkspace, registerAclDiagnosisSkill, tempWriteSid, workspaceWriteSid } from '@deepseek-ai/dsh-sandbox-windows-acl'
+import { AclWriteGrant, assertTempRootOutsideWorkspace, isKoffiAvailable, registerAclDiagnosisSkill, tempWriteSid, workspaceWriteSid } from '@deepseek-ai/dsh-sandbox-windows-acl'
 import { assertNever } from '@deepseek-ai/dsh-util-values'
 import { bwrapProfileArgs, landlockProfileArgs, seatbeltProfileArgs } from './profiles.ts'
 
@@ -99,6 +99,7 @@ function defaultProbeSeatbelt(seatbeltExec: string, timeoutMs: number): boolean 
  * chains and mirrors the other rungs' shape.
  */
 function defaultProbeWindowsAcl(runnerInvocation: string[], timeoutMs: number): boolean {
+  if (!isKoffiAvailable()) return false
   const program = runnerInvocation[0]
   if (program === undefined) return false
   const probe = spawnSync(program, [
@@ -334,6 +335,14 @@ export class LocalSandboxProvider extends SandboxProvider {
       })
     }
     const selected = this.selectRunner(policy.mode)
+    if (selected.runner === 'windows-acl' && !isKoffiAvailable()) {
+      return Promise.resolve<ConfinedArgv>({
+        argv: [...argv],
+        enforcement: 'partial',
+        denialSignatures: DENIAL_SIGNATURES['windows-acl'],
+        runnerFailureRules: RUNNER_FAILURE_RULES['windows-acl'],
+      })
+    }
     const runnerArgv = this.runnerArgv(selected.runner, policy)
     return Promise.resolve<ConfinedArgv>({
       argv: [...runnerArgv, '--', ...argv],
@@ -512,7 +521,9 @@ export class LocalSandboxProvider extends SandboxProvider {
     const [first, ...rest] = chain
     if (first === undefined) return 'unavailable'
     // A sole candidate needs no arbitration; its execution-time refusal still fails closed.
-    if (rest.length === 0) return { runner: first, enforcement: STATIC_ENFORCEMENT[first] }
+    if (rest.length === 0) {
+      return { runner: first, enforcement: STATIC_ENFORCEMENT[first] }
+    }
     for (const runner of chain) {
       const enforcement = this.probeRunner(runner)
       if (enforcement !== 'unusable') return { runner, enforcement }

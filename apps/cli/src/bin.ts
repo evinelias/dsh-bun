@@ -12,6 +12,12 @@ import { parseDshArgs } from './args.ts'
 import { reportStartupFailure } from './startup-diagnostics.ts'
 import type { RunProfileOptions } from './profile-boot.ts'
 
+// Ensure packaged / standalone runtime detection works across all packages
+const proc = process as unknown as { pkg?: unknown }
+if (typeof proc.pkg === 'undefined') {
+  proc.pkg = {}
+}
+
 /** Installation-owned dependencies supplied by a packaged CLI launcher. */
 export type RunCliOptions = Pick<RunProfileOptions, 'packageManager'> & {
   /** Permit plugin commands for Desktop's existing profile; reserved for its installed carrier. */

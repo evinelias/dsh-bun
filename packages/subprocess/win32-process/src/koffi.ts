@@ -8,3 +8,13 @@ export type Koffi = typeof koffi
 
 /** Load Koffi on the first Win32 native operation. */
 export const requireKoffi = createLazyRequire<Koffi>('koffi', import.meta.url)
+
+/** Return whether Koffi is loadable in the current runtime environment. */
+export function isKoffiAvailable(): boolean {
+  try {
+    requireKoffi()
+    return true
+  } catch {
+    return false
+  }
+}

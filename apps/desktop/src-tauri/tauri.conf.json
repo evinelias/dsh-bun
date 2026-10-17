@@ -37,7 +37,9 @@
       "binaries/dsh-bun"
     ],
     "resources": [
-      "binaries/web-dist/**/*"
+      "binaries/web-dist/**/*",
+      "binaries/rg*",
+      "binaries/dsh-bun-rg*"
     ]
   },
   "plugins": {

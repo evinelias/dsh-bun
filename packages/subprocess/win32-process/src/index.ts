@@ -2,6 +2,7 @@
 
 export { ERROR_INSUFFICIENT_BUFFER } from './abi.ts'
 export * from './errors.ts'
+export { isKoffiAvailable } from './koffi.ts'
 export {
   allocPtrSlot,
   allocUint32,
