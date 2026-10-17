@@ -18,6 +18,10 @@ if (typeof proc.pkg === 'undefined') {
   proc.pkg = {}
 }
 
+if (typeof process.env.MIMALLOC_PURGE_DELAY === 'undefined') {
+  process.env.MIMALLOC_PURGE_DELAY = '0'
+}
+
 /** Installation-owned dependencies supplied by a packaged CLI launcher. */
 export type RunCliOptions = Pick<RunProfileOptions, 'packageManager'> & {
   /** Permit plugin commands for Desktop's existing profile; reserved for its installed carrier. */

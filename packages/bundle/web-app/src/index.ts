@@ -273,10 +273,21 @@ export function apply(ctx: Context, config: Config): void {
           console.log(`dsh web: ${authenticatedUrl}`)
         }
         // Give the event loop 1 tick to settle, then purge initialization memory
-        setTimeout(() => {
+        setTimeout(async () => {
           const globalBun = (globalThis as unknown as { Bun?: { gc?: (sync?: boolean) => void } }).Bun
           if (typeof globalBun !== 'undefined' && typeof globalBun.gc === 'function') {
             globalBun.gc(true) // Synchronous JSC GC + mimalloc heap sweep
+          }
+          if (process.platform === 'win32' && 'Bun' in globalThis) {
+            try {
+              const { dlopen, FFIType } = await import('bun:ffi')
+              const kernel32 = dlopen('kernel32.dll', {
+                GetCurrentProcess: { args: [], returns: FFIType.ptr },
+                SetProcessWorkingSetSize: { args: [FFIType.ptr, FFIType.isize, FFIType.isize], returns: FFIType.i32 },
+              })
+              kernel32.symbols.SetProcessWorkingSetSize(kernel32.symbols.GetCurrentProcess(), -1, -1)
+              kernel32.close()
+            } catch {}
           }
         }, 1500)
         if (handoffBrowser) {

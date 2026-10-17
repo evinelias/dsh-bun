@@ -167,6 +167,17 @@ function main(): void {
     stdio: 'inherit',
   })
 
+  // 4b. Optional Executable Compression (Release Only)
+  if (process.env.COMPRESS_BINARY === '1') {
+    try {
+      execSync('upx --version', { stdio: 'ignore' })
+      console.log(`[+] Compressing sidecar binary with upx --best: ${sidecarPath}`)
+      execSync(`upx --best "${sidecarPath}"`, { stdio: 'inherit' })
+    } catch {
+      console.warn('[-] COMPRESS_BINARY=1 requested, but upx is not available on PATH. Skipping compression.')
+    }
+  }
+
   function safeCp(src: string, dest: string, opts?: { recursive?: boolean }): void {
     if (resolve(src) === resolve(dest)) return
     cpSync(src, dest, opts)

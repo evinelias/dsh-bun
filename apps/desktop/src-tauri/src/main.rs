@@ -125,6 +125,7 @@ fn main() {
                     cmd.current_dir(parent);
                 }
                 cmd.env("DSH_DESKTOP", "1");
+                cmd.env("MIMALLOC_PURGE_DELAY", "0");
                 // Start web profile in headless mode (no external browser spawn, port 0 for OS-assigned port)
                 cmd.args(["web", "--no-open", "--port", "0"]);
                 cmd.stdout(std::process::Stdio::piped());
