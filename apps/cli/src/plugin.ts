@@ -2,6 +2,7 @@
 import { runPluginCommand, runProfilePnpm, setProfileVersionExemption, type PackageOperationOptions } from '@deepseek-ai/dsh-plugin-manager/operations'
 import { DEFAULT_PROFILE_BUNDLES, initProfile, PROFILE_TEMPLATES, readProfileCompatibility, resolveProfileDir, ensurePackageRootIndices, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
 import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
+import { INSTALL_ANCHOR } from './profile-boot.ts'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { basename, join } from 'node:path'
@@ -92,6 +93,7 @@ export async function runPlugin(profile: string, args: readonly string[], packag
     lookupTimeoutMs: 120000,
     onOutput: (text, stream) => { process[stream].write(text) },
   }
+  const context = { profile, installAnchor: INSTALL_ANCHOR, cwd: process.cwd() }
   const result = profile === 'desktop'
     ? await withFileLock(join(dir, 'package.json'), async () => {
       requireDesktopProfile(dir)
