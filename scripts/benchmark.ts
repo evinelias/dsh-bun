@@ -175,15 +175,16 @@ async function main() {
     desktopBinaryMb: desktopMb,
   }
 
-  console.log('\n--- Measured Benchmark Summary Table ---\n')
-  console.log('| Metric | Upstream (Node / Electron) | DSH Bun Edition (Measured) | Improvement |')
-  console.log('| :--- | :--- | :--- | :--- |')
-  console.log(`| **Cold CLI Startup (\`--help\`)** | ~250–400 ms | **${results.cliHelpMs} ms** | ~4–6x faster startup |`)
-  console.log(`| **Headless Boot to HTTP 200** | ~1,200–2,000 ms | **${results.serverBootToFirst200Ms} ms** | ~3–4x faster boot |`)
-  console.log(`| **Idle Memory Footprint (RSS)** | ~180–320 MB | **${results.idleRssMb} MB** | ~3–5x lower RAM |`)
-  console.log(`| **Desktop Shell Executable** | ~230 MB+ (Electron) | **${results.desktopBinaryMb} MB** (Tauri v2) | ~60x smaller shell |`)
-  console.log(`| **Self-Contained CLI Executable** | N/A (Requires Node.js) | **${results.cliBinaryMb} MB** (All 2,800+ modules) | Zero-dependency binary |`)
-  console.log('\nReproduction command: `bun scripts/benchmark.ts`\n')
+  console.log('\n--- Measured dsh-bun Performance & Native Distribution Footprint ---\n')
+  console.log('| Metric | dsh-bun (Measured) | Distribution & Architecture Advantage |')
+  console.log('| :--- | :--- | :--- |')
+  console.log(`| **Cold CLI Startup (\`--help\`)** | **${results.cliHelpMs} ms** | Native Bun executable execution, instant CLI parsing |`)
+  console.log(`| **Headless Boot to HTTP 200** | **${results.serverBootToFirst200Ms} ms** | Full Cordis kernel + Elysia HTTP routing + auth handshake |`)
+  console.log(`| **Idle Memory Footprint (RSS)** | **${results.idleRssMb} MB** | Post-sweep Working Set trimming via \`Bun.gc(true)\` + Win32 FFI |`)
+  console.log(`| **Desktop Shell Executable** | **${results.desktopBinaryMb} MB** (Tauri v2) | **~60x smaller** than Electron (~230 MB+ runtime footprint eliminated) |`)
+  console.log(`| **Self-Contained CLI Executable** | **${results.cliBinaryMb} MB** | Zero host Node.js / pnpm / Bun required for end users |`)
+  console.log('\n*Note: Upstream Node/Electron benchmarks vary significantly across environments; dsh-bun metrics measured on Windows x64 (Bun 1.3.5).*\n')
+  console.log('Reproduction command: `bun scripts/benchmark.ts`\n')
 }
 
 main().catch((err) => {

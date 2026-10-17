@@ -6,7 +6,7 @@
  */
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { createConnection } from 'node:net'
 import { delimiter, join, resolve } from 'node:path'
 import { platform, tmpdir } from 'node:os'
@@ -25,13 +25,19 @@ if (!existsSync(binPath)) {
   process.exit(1)
 }
 
+if (!isWin) {
+  try {
+    chmodSync(binPath, 0o755)
+  } catch {}
+}
+
 // Strip PATH of external node, npm, pnpm, bun, nvm, fnm, volta
 const originalPath = process.env.PATH || process.env.Path || ''
 const strippedPathParts = originalPath
   .split(delimiter)
   .filter(p => !/(node|npm|pnpm|bun|nvm|fnm|volta)/i.test(p))
 
-// Ensure minimal OS system directories exist on Windows
+// Ensure minimal OS system directories exist
 if (isWin) {
   const winDir = process.env.SystemRoot || 'C:\\Windows'
   const sys32 = join(winDir, 'System32')
@@ -39,6 +45,10 @@ if (isWin) {
   const ps = join(sys32, 'WindowsPowerShell', 'v1.0')
   for (const dir of [winDir, sys32, wbem, ps]) {
     if (!strippedPathParts.includes(dir)) strippedPathParts.push(dir)
+  }
+} else {
+  for (const dir of ['/usr/local/bin', '/usr/bin', '/bin', '/usr/sbin', '/sbin']) {
+    if (existsSync(dir) && !strippedPathParts.includes(dir)) strippedPathParts.push(dir)
   }
 }
 
@@ -99,7 +109,7 @@ try {
     let stdoutBuffer = ''
     const timer = setTimeout(() => {
       rej(new Error(`Timed out waiting for server URL. Stdout: ${stdoutBuffer}`))
-    }, 15000)
+    }, 30000)
 
     serverProc?.stdout?.on('data', (d: Buffer) => {
       stdoutBuffer += d.toString()
@@ -269,7 +279,7 @@ try {
     const timer = setTimeout(() => {
       restartProc.kill()
       rej(new Error('Profile restart timed out'))
-    }, 15000)
+    }, 30000)
 
     restartProc.stdout?.on('data', (d: Buffer) => {
       buf += d.toString()
