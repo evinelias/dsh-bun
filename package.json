@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.1-alpha.4",
+  "version": "0.2.1-rc.2",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build:client": "bun scripts/build-client-packages.ts",
-    "build:binary": "bun scripts/generate-builtin-registry.ts && bun scripts/generate-typert.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun",
+    "build:binary": "bun scripts/generate-typert.ts && bun scripts/generate-builtin-registry.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun",
     "build:sidecar": "bun scripts/build-sidecar.ts",
     "build:web": "bun run --cwd apps/web build",
     "test:plugins": "bun scripts/verify-plugins.ts",
@@ -280,7 +280,6 @@
     "oxlint": "1.81.0",
     "oxlint-tsgolint": "7.0.2001",
     "papaparse": "5.5.3",
-    "pnpm": "11.28.5",
     "publint": "^0.3.24",
     "semver": "^7.8.5",
     "smol-toml": "^1.9.0",
@@ -299,5 +298,25 @@
     "@deepseek-ai/dsh-experimental-worktree": "workspace:*",
     "@deepseek-ai/dsh-experimental-tool-worktree": "workspace:*",
     "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*"
-  }
+  },
+  "patchedDependencies": {
+    "@earendil-works/pi-ai@1.1.0": "patches/@earendil-works__pi-ai@1.1.0.patch",
+    "@electron/osx-sign@1.3.3": "patches/@electron__osx-sign@1.3.3.patch",
+    "@fortune-sheet/core@1.0.4": "patches/@fortune-sheet__core@1.0.4.patch",
+    "@fortune-sheet/react@1.0.4": "patches/@fortune-sheet__react@1.0.4.patch",
+    "@yao-pkg/pkg@6.21.0": "patches/@yao-pkg__pkg@6.21.0.patch",
+    "app-builder-lib@26.17.0": "patches/app-builder-lib@26.17.0.patch",
+    "exceljs@4.4.0": "patches/exceljs@4.4.0.patch",
+    "node-pty@1.2.0-beta.15": "patches/node-pty@1.2.0-beta.15.patch"
+  },
+  "overrides": {
+    "yauzl": "3.4.0"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "lefthook",
+    "node-pty",
+    "koffi",
+    "@deepseek-ai/dsh-subprocess-local"
+  ]
 }

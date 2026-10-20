@@ -37,20 +37,17 @@ function identityField(manifest: Record<string, unknown>, field: 'name' | 'versi
 }
 
 /**
- * Read this app-boot package's version in both source and bundled installations.
+ * Read this app-boot package's version, using the release fallback when a compiled binary omits its manifest.
  * @returns the validated runtime semantic version, preserving its exact spelling.
- * @throws if package.json cannot be read or its version is missing or invalid.
+ * @throws if an existing package.json cannot be read or its version is missing or invalid.
  */
 export function getDshRuntimeVersion(): string {
-  try {
-    // The executable's virtual filesystem intercepts string paths, not URL arguments.
-    const filename = fileURLToPath(new URL('../package.json', import.meta.url))
-    if (fs.existsSync(filename)) {
-      const manifest = objectOf(JSON.parse(fs.readFileSync(filename, 'utf8')), 'app-boot package.json')
-      return runtimeVersionOf(Object.hasOwn(manifest, 'version') ? manifest.version : undefined)
-    }
-  } catch {}
-  return '0.2.1-alpha.4'
+  // The executable's virtual filesystem intercepts string paths, not URL arguments.
+  const filename = fileURLToPath(new URL('../package.json', import.meta.url))
+  // shortcut: compiled builds omit this manifest; update the fallback when syncing upstream.
+  if (!fs.existsSync(filename)) return '0.2.1-rc.2'
+  const manifest = objectOf(JSON.parse(fs.readFileSync(filename, 'utf8')), 'app-boot package.json')
+  return runtimeVersionOf(Object.hasOwn(manifest, 'version') ? manifest.version : undefined)
 }
 
 function satisfies(runtimeVersion: string, range: string): boolean {
