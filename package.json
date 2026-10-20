@@ -224,7 +224,8 @@
     "verify-product-use": "bun scripts/verify-product-use.ts",
     "benchmark": "bun scripts/benchmark.ts",
     "test:boot": "bun scripts/test-boot.ts",
-    "test:release": "bun scripts/verify-release-binary.ts"
+    "test:release": "bun scripts/verify-release-binary.ts",
+    "test:external-plugins": "bun apps/cli/tests/profiles/external-plugins.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",
@@ -297,7 +298,8 @@
     "@deepseek-ai/dsh-working-directory": "workspace:*",
     "@deepseek-ai/dsh-experimental-worktree": "workspace:*",
     "@deepseek-ai/dsh-experimental-tool-worktree": "workspace:*",
-    "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*"
+    "@deepseek-ai/dsh-experimental-cua-macos": "workspace:*",
+    "@types/bun": "^1.4.3"
   },
   "patchedDependencies": {
     "@earendil-works/pi-ai@1.1.0": "patches/@earendil-works__pi-ai@1.1.0.patch",
