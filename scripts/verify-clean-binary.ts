@@ -6,7 +6,7 @@
  */
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { chmodSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { createConnection } from 'node:net'
 import { delimiter, join, resolve } from 'node:path'
 import { platform, tmpdir } from 'node:os'
@@ -73,11 +73,16 @@ function fail(step: number, msg: string, err?: unknown) {
   console.error(`[FAIL] Step ${step}: ${msg}`, err ?? '')
 }
 
-// STEP 1: Launch with stripped PATH
+// STEP 1: Launch with stripped PATH and check build-script contracts (no --minify)
 try {
-  pass(1, `Isolated environment initialized (stripped PATH, isolated temp DSH_HOME: ${tempHome})`)
+  const rootPkg = JSON.parse(readFileSync(resolve('package.json'), 'utf8')) as { scripts?: Record<string, string> }
+  const buildSidecarSrc = readFileSync(resolve('scripts', 'build-sidecar.ts'), 'utf8')
+  if (rootPkg.scripts?.['build:binary']?.includes('--minify') || buildSidecarSrc.includes('--minify')) {
+    throw new Error('CRITICAL: --minify detected in binary compile scripts. Typert RPC parameter reflection requires unminified code!')
+  }
+  pass(1, `Isolated environment initialized (stripped PATH, isolated temp DSH_HOME: ${tempHome}, verified no --minify regressions)`)
 } catch (e) {
-  fail(1, 'Failed to initialize isolated environment', e)
+  fail(1, 'Failed to initialize isolated environment or detected forbidden --minify', e)
 }
 
 // STEP 2: Verify --version

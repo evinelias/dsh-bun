@@ -17,3 +17,6 @@ We are converting a direct clone/fork of `https://github.com/deepseek-ai/deepsee
    - Strip out any Electron packaging/dependencies.
    - Compile the Bun + Elysia CLI/host entrypoint into a standalone executable via `bun build --compile`.
    - Wrap the official Web UI and the compiled Bun binary inside a lightweight Tauri v2 shell (`src-tauri`) using `bundle.externalBin`.
+6. **Strict Prohibition on `--minify` for Binary Builds:**
+   - NEVER add `--minify` to `bun build --compile` in `package.json`, `scripts/build-sidecar.ts`, or CI release workflows.
+   - *Reason:* Upstream Cordis and the Typert RPC Gateway use runtime parameter reflection (`Function.prototype.toString()`) to extract method argument names (e.g. across `SettingsController`, `AccountController`, `TerminalController`). Minifying mangles argument names into single characters (`e`, `t`), breaking RPC parameter binding and causing the UI to hang indefinitely on "Loading settings...".
