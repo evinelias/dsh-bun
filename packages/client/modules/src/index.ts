@@ -631,7 +631,7 @@ export class ClientModuleRegistry extends Service {
    */
   constructor(ctx: Context) {
     super(ctx, 'clientModules')
-    let version = '0.2.1-alpha.4'
+    let version = '0.2.1-rc.2'
     try {
       version = (createRequire(import.meta.url)('../package.json') as { version: string }).version
     } catch {}

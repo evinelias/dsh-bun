@@ -17,6 +17,12 @@ function check(peerDependencies: object) {
 afterEach(() => vi.restoreAllMocks())
 
 describe('dsh runtime version', () => {
+  it('uses the current release version when the compiled executable omits the manifest', () => {
+    const { version: expected } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
+    vi.spyOn(fs, 'existsSync').mockReturnValue(false)
+    expect(getDshRuntimeVersion()).toBe(expected)
+  })
+
   it('reads the exact version with a string path accepted by executable virtual filesystems', () => {
     const { version: expected } = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string }
     const read = vi.spyOn(fs, 'readFileSync')

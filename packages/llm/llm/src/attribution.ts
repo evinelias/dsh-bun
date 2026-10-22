@@ -12,7 +12,7 @@ import { createRequire } from 'node:module'
 // The package's own manifest is the single source of the version so the
 // User-Agent cannot drift from what is published (`./package.json` is an
 // export of this package; the relative path resolves from both `src/` and
-let version = '0.2.1-alpha.4'
+let version = '0.2.1-rc.2'
 try {
   version = (createRequire(import.meta.url)('../package.json') as { version: string }).version
 } catch {}

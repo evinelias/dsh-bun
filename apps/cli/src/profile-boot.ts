@@ -38,7 +38,11 @@ import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { DSH_LAUNCH_ENVIRONMENT_KEY, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'
 import { provideCmdline, type AppReady } from '@deepseek-ai/dsh-cmdline'
 import { createProcessShutdown, type ProcessShutdown } from './process-shutdown.ts'
-import { BUILTIN_PLUGINS } from './builtin-plugins.generated.ts'
+import { BUILTIN_MODULES, BUILTIN_PLUGINS } from './builtin-plugins.generated.ts'
+import { registerBuiltinModules } from './builtin-modules.ts'
+
+const isCompiled = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined' && !basename(process.execPath).toLowerCase().startsWith('bun')
+if (isCompiled) registerBuiltinModules(BUILTIN_MODULES)
 
 const NAME = 'dsh'
 
@@ -346,7 +350,6 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
     })
 
     const rootConfig = join(composed.profile.dir, PROFILE_ROOT_FILENAME)
-    const isCompiled = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined' && !basename(process.execPath).toLowerCase().startsWith('bun')
     const defaultCmd = isCompiled ? process.execPath : 'bun'
     const defaultPm: ProfileContext['packageManager'] = {
       command: defaultCmd,

@@ -186,7 +186,7 @@ export class OpenTelemetrySessionBackend extends SessionTelemetryBackend {
       throw new Error(`session-telemetry-otel: shutdownTimeoutMillis must be a positive finite number no greater than ${MAX_TIMER_DELAY_MILLIS}, got ${String(shutdownTimeoutMillis)}`)
     }
     this.shutdownTimeoutMillis = shutdownTimeoutMillis
-    let version = '0.2.1-alpha.4'
+    let version = '0.2.1-rc.2'
     try {
       version = (createRequire(import.meta.url)('../package.json') as { version: string }).version
     } catch {}

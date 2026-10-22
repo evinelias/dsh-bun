@@ -37,5 +37,8 @@ jobs:
       - name: Compile Standalone CLI Binary
         run: bun run build:binary
 
+      - name: Verify external plugin imports
+        run: bun run test:external-plugins
+
       - name: Verify Clean-Machine Standalone Binary (10-Step E2E)
         run: bun run test:clean-binary
