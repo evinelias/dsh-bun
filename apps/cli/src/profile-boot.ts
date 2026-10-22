@@ -10,7 +10,7 @@
  * @module @deepseek-ai/dsh/profile-boot
  */
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FiberState, type Context } from '@deepseek-ai/cordis'
@@ -307,6 +307,21 @@ export interface RunProfileOptions {
  * @returns the settled root context and the shutdown controller.
  * @throws after disposing startup resources; cleanup failures retain the original error.
  */
+function cleanShadowedBuiltins(nodeModulesDir: string, builtins: Record<string, unknown>): void {
+  const scopeDir = join(nodeModulesDir, '@deepseek-ai')
+  if (!existsSync(scopeDir)) return
+  try {
+    for (const entry of readdirSync(scopeDir)) {
+      const pkgName = `@deepseek-ai/${entry}`
+      if (builtins[pkgName] !== undefined) {
+        try {
+          rmSync(join(scopeDir, entry), { recursive: true, force: true })
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
 export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Context; shutdown: ProcessShutdown }> {
   // Before the first plugin mounts and before anything can issue a request: Node's fetch ignores the
   // proxy environment on its own, so every profile would otherwise connect directly. Resolving from
@@ -363,6 +378,10 @@ export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Con
       startedBundles: composed.profile.layers.map(layer => layer.packageName),
       cwd: process.cwd(), home: resolveDshHome(),
       overlays: composed.overlays, telemetryDisabledEnv: process.env.DSH_TELEMETRY_DISABLED,
+    }
+    if (isCompiled) {
+      cleanShadowedBuiltins(join(composed.profile.dir, 'node_modules'), BUILTIN_PLUGINS)
+      cleanShadowedBuiltins(join(resolveDshHome(), 'node_modules'), BUILTIN_PLUGINS)
     }
     ensurePackageRootIndices(join(composed.profile.dir, 'node_modules'))
     ensurePackageRootIndices(join(resolveDshHome(), 'node_modules'))

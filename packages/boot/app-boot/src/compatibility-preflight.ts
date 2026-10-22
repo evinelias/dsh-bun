@@ -29,10 +29,17 @@ function patchWarning(ctx: Context): (message: string, ...args: unknown[]) => vo
 function manifestOf(ctx: Context, name: string, parentURL: string): object | undefined {
   if (name.startsWith('cordis:')) return undefined
   const specifier = name.startsWith('#') ? resolvePluginResource(name, parentURL) : name
+  const builtins = (ctx.loader as unknown as { builtins?: Record<string, unknown> })?.builtins
+  if (builtins && (builtins[name] !== undefined || builtins[specifier] !== undefined)) {
+    return undefined
+  }
   const packages = ctx.get('pluginPackages')
   const pkg = packages?.packageOf(specifier, parentURL)
   if (pkg !== undefined) return readManifest(pkg.manifestPath)
   const bare = barePackageName(specifier)
+  if (builtins && bare !== undefined && builtins[bare] !== undefined) {
+    return undefined
+  }
   if (bare !== undefined && packages === undefined) {
     // An embedder without the package service falls back to Node's own lookup, as `packageDirFromParent` does.
     for (const path of createRequire(parentURL).resolve.paths(bare) as string[]) {

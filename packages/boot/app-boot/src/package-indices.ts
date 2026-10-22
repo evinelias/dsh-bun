@@ -83,9 +83,22 @@ function fixPackageRoot(pkgDir: string): void {
       || (existsSync(join(pkgDir, 'lib', 'index.js')) ? 'lib/index.js' : undefined)
 
     if (!targetRel || typeof targetRel !== 'string') return
-    const normalizedTarget = targetRel.replace(/^[./\\]+/, '').replace(/\\/g, '/')
+    let normalizedTarget = targetRel.replace(/^[./\\]+/, '').replace(/\\/g, '/')
     if (normalizedTarget === 'index.js' || normalizedTarget === 'index.mjs') return
-    if (!existsSync(join(pkgDir, normalizedTarget))) return
+    if (!existsSync(join(pkgDir, normalizedTarget))) {
+      // In Bun standalone, if a package was installed directly from source/git without prebuilt lib/,
+      // fall back to src/*.ts since Bun executes TypeScript natively.
+      if (normalizedTarget.startsWith('lib/')) {
+        const srcFallback = normalizedTarget.replace(/^lib\//, 'src/').replace(/\.[cm]?js$/, '.ts')
+        if (existsSync(join(pkgDir, srcFallback))) {
+          normalizedTarget = srcFallback
+        } else {
+          return
+        }
+      } else {
+        return
+      }
+    }
 
     const proxyContent = `const _mod = await import("./${normalizedTarget}");\nexport default _mod.default ?? _mod;\nexport * from "./${normalizedTarget}";\n`
     if (!hasIndexJs) {
