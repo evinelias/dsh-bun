@@ -11,12 +11,12 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, relative } from 'node:path'
 
-function exportTarget(value: unknown): string | undefined {
+function exportTarget(value: unknown, preferRequire = false): string | undefined {
   if (typeof value === 'string') return value
   if (value === null || typeof value !== 'object') return
   const conditions = value as Record<string, unknown>
-  for (const condition of ['bun', 'import', 'node', 'default', 'require']) {
-    const target = exportTarget(conditions[condition])
+  for (const condition of ['bun', ...preferRequire ? ['require'] : [], 'import', 'node', 'default', 'require']) {
+    const target = exportTarget(conditions[condition], preferRequire)
     if (target !== undefined) return target
   }
 }
@@ -100,14 +100,14 @@ function fixPackageRoot(pkgDir: string): void {
     let targetRel: string | undefined
     if (typeof pkg.exports === 'object' && pkg.exports !== null) {
       const exp = pkg.exports as Record<string, unknown>
-      targetRel = exportTarget(exp['.'] ?? exp)
+      targetRel = exportTarget(exp['.'] ?? exp, true)
     } else if (typeof pkg.exports === 'string') {
       targetRel = pkg.exports
     }
 
     targetRel ??= (typeof pkg.bun === 'string' && pkg.bun)
-      || (typeof pkg.module === 'string' && pkg.module)
       || (typeof pkg.main === 'string' && pkg.main)
+      || (typeof pkg.module === 'string' && pkg.module)
       || (existsSync(join(pkgDir, 'lib', 'index.mjs')) ? 'lib/index.mjs' : undefined)
       || (existsSync(join(pkgDir, 'lib', 'index.js')) ? 'lib/index.js' : undefined)
 
@@ -131,7 +131,9 @@ function fixPackageRoot(pkgDir: string): void {
 
     const proxyContent = `const _mod = await import("./${normalizedTarget}");\nexport default _mod.default ?? _mod;\nexport * from "./${normalizedTarget}";\n`
     const commonJS = normalizedTarget.endsWith('.cjs') || (pkg.type !== 'module' && !normalizedTarget.endsWith('.mjs'))
-    if (!hasIndexJs || readFileSync(join(pkgDir, 'index.js'), 'utf8') === proxyContent) {
+    const generatedProxy =
+      /^const _mod = await import\("(\.\/[^"\n]+)"\);\nexport default _mod.default \?\? _mod;\nexport \* from "\1";\n$/u
+    if (!hasIndexJs || generatedProxy.test(readFileSync(join(pkgDir, 'index.js'), 'utf8'))) {
       writeFileSync(join(pkgDir, 'index.js'), commonJS ? `module.exports = require("./${normalizedTarget}");\n` : proxyContent, 'utf8')
     }
     if (!hasIndexMjs) {

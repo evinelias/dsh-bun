@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { spawnSync } from 'node:child_process'
-import { cpSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -21,7 +21,9 @@ test.skipIf(process.platform === 'win32')('compiled flock loads its packaged add
       await tryLockExclusive(second)
       closeSync(second)
     `)
-    cpSync('dist/node_modules', join(root, 'node_modules'), { recursive: true, dereference: true })
+    const platformPackage = `@deepseek-ai/node-addon-system-${process.platform}-${process.arch}`
+    mkdirSync(join(root, 'node_modules/@deepseek-ai'), { recursive: true })
+    cpSync(join('dist/node_modules', platformPackage), join(root, 'node_modules', platformPackage), { recursive: true, dereference: true })
     const build = spawnSync('bun', ['build', source, '--compile', '--outfile', executable], { encoding: 'utf8' })
     expect(build.status, build.stderr).toBe(0)
     const run = spawnSync(executable, [], { encoding: 'utf8', cwd: root, timeout: 10000 })

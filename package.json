@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "build:client": "bun scripts/build-client-packages.ts",
-    "build:binary": "bun scripts/generate-typert.ts && bun scripts/generate-builtin-registry.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun && bun scripts/package-native-system.ts dist",
+    "build:binary": "bun scripts/generate-typert.ts && bun scripts/generate-builtin-registry.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun && bun scripts/package-native-system.ts dist && bun scripts/package-builtin-assets.ts dist",
     "build:sidecar": "bun scripts/build-sidecar.ts",
     "build:web": "bun run --cwd apps/web build",
     "test:plugins": "bun scripts/verify-plugins.ts",
