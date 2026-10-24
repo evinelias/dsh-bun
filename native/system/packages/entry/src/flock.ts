@@ -1,6 +1,6 @@
 /** Lazy POSIX flock entry; importing it does not load a native addon. */
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { getSystemErrorName } from 'node:util'
 
 interface FlockBinding {
@@ -25,7 +25,8 @@ function loadBinding(): FlockBinding {
     const report = process.report.getReport() as { header: { glibcVersionRuntime?: string } }
     filename = join(report.header.glibcVersionRuntime ? 'glibc' : 'musl', filename)
   }
-  const require = createRequire(import.meta.url)
+  const compiled = process.versions.bun && !basename(process.execPath).toLowerCase().startsWith('bun')
+  const require = createRequire(compiled ? process.execPath : import.meta.url)
   const manifest = require.resolve(`@deepseek-ai/node-addon-system-${platform}-${arch}/package.json`)
   binding = require(join(dirname(manifest), 'bin', filename)) as FlockBinding
   return binding
