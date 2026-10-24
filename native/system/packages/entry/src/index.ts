@@ -15,7 +15,7 @@
  */
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** The launcher binary's file name inside each platform package's `bin/`. */
@@ -67,7 +67,9 @@ export interface LauncherGrants {
  * @returns the absolute launcher path to probe and exec.
  */
 export function launcherPath(
-  resolvePackageJson: (specifier: string) => string = createRequire(import.meta.url).resolve,
+  resolvePackageJson: (specifier: string) => string = createRequire(
+    process.versions.bun && !basename(process.execPath).toLowerCase().startsWith('bun') ? process.execPath : import.meta.url,
+  ).resolve,
 ): string {
   const platformPackage = `@deepseek-ai/node-addon-system-${process.platform}-${process.arch}`
   try {
