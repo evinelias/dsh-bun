@@ -1,6 +1,7 @@
 /** Caller-relative lazy loading for CommonJS-compatible Host dependencies. */
 
 import { createRequire } from 'node:module'
+import { basename } from 'node:path'
 
 /**
  * Create a successful-result cache around Node's caller-relative `require`.
@@ -11,7 +12,8 @@ import { createRequire } from 'node:module'
  */
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- preserves caller-supplied module types
 export function createLazyRequire<T>(specifier: string, parentURL: string | URL): () => T {
-  const require = createRequire(parentURL)
+  const compiled = process.versions.bun && !basename(process.execPath).toLowerCase().startsWith('bun')
+  const require = createRequire(compiled ? process.execPath : parentURL)
   let loaded = false
   let value: T
   return () => {
