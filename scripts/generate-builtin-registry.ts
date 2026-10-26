@@ -11,7 +11,8 @@ import { writeFileSync, existsSync, globSync, readdirSync, readFileSync } from '
 import { dirname, join, relative, resolve } from 'node:path'
 import { homedir } from 'node:os'
 import { createRequire } from 'node:module'
-import { loadProfile, readProfilePatches, PROFILE_TEMPLATES } from '@deepseek-ai/dsh-app-boot'
+import { loadProfile, readProfilePatches } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'
 import { INSTALL_ANCHOR } from '../apps/cli/src/profile-boot.ts'
 
 const root = resolve(import.meta.dir, '..')
