@@ -1,7 +1,7 @@
 /** Profile package management and explicit, exact-version compatibility approvals. */
 import { runPluginCommand, runProfilePnpm, setProfileVersionExemption, type PackageOperationOptions } from '@deepseek-ai/dsh-plugin-manager/operations'
-import { DEFAULT_PROFILE_BUNDLES, initProfile, PROFILE_TEMPLATES, readProfileCompatibility, resolveProfileDir, ensurePackageRootIndices, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
-import { withFileLock } from '@deepseek-ai/dsh-atomic-write'
+import { initProfile, readProfileCompatibility, resolveProfileDir, ensurePackageRootIndices, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES, DEFAULT_PROFILE_BUNDLES } from '@deepseek-ai/dsh-official-bundles'
 import { INSTALL_ANCHOR } from './profile-boot.ts'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'

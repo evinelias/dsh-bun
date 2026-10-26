@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-browser-use",
   "description": "Exclusive named browser-use provider registration",
-  "version": "0.2.1-rc.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
@@ -20,6 +20,7 @@
       "default": "./lib/index.js"
     },
     "./src/*": "./src/*",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json",
     "./brand": {
       "bun": "./src/brand.ts",
@@ -28,6 +29,7 @@
     }
   },
   "files": [
+    "locale/*.json",
     "lib/index.js",
     "lib/types/**/*.js",
     "lib/types/**/*.d.ts"

@@ -26,13 +26,13 @@ import {
   reportSkippedBundles,
   PluginPackages,
   PROFILE_PATCH_FILENAME,
-  PROFILE_TEMPLATES,
   resolveProfileDir,
   ensurePackageRootIndices,
   type ProfileContext,
   type Profile,
   type RuntimeResolution,
 } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
 import { installProxyFromEnvironment } from '@deepseek-ai/dsh-http-proxy'
 import { DSH_LAUNCH_ENVIRONMENT_KEY, type LaunchEnvironmentSnapshot } from '@deepseek-ai/dsh-launch-environment'

@@ -20,3 +20,44 @@ We are converting a direct clone/fork of `https://github.com/deepseek-ai/deepsee
 6. **Strict Prohibition on `--minify` for Binary Builds:**
    - NEVER add `--minify` to `bun build --compile` in `package.json`, `scripts/build-sidecar.ts`, or CI release workflows.
    - *Reason:* Upstream Cordis and the Typert RPC Gateway use runtime parameter reflection (`Function.prototype.toString()`) to extract method argument names (e.g. across `SettingsController`, `AccountController`, `TerminalController`). Minifying mangles argument names into single characters (`e`, `t`), breaking RPC parameter binding and causing the UI to hang indefinitely on "Loading settings...".
+
+## Upstream Repository Layout & Architecture
+
+DeepSeek Harness is an all-plugin Cordis agent harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
+
+```
+vendor/      Vendored Cordis (vendor/README.md)
+packages/    @deepseek-ai/dsh-<pkg> workspaces at packages/<group>/<pkg>/
+  core/                 agent/session API
+  api/                  remote BFF
+  typert/               type graphs
+  llm/                  model providers
+  shell/                command execution
+  subprocess/           child-process management
+  ssh/                  SSH execution providers
+  terminal/             persistent terminals
+  ptc-runtime/          PTC execution
+  sandbox/              process confinement
+  deliverables/         turn deliverables
+  fs/                   filesystem access
+  lsp/                  language servers
+  skill/                skill loading
+  web/                  search/fetch tools
+  computer-use/         computer interaction
+  browser-use/          browser interaction
+  compaction/           context compaction
+  context/              request context
+  subagent/             delegation
+  attachment/           attachment handling
+  interaction/          user approval/questions
+  diff/                 patch application
+  storage/              persistence adapters
+  telemetry/            traces and metrics
+  security/             authorization
+  test-support/         shared test utilities
+  preset/               bundled presets
+  bundle/               bundle layer definitions
+  boot/                 launcher and runtime services
+  host/                 platform host services
+  client/               official Web UI packages
+```
