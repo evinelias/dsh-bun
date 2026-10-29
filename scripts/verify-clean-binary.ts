@@ -89,7 +89,8 @@ try {
 try {
   const res = spawnSync(binPath, ['--version'], { env: cleanEnv as NodeJS.ProcessEnv })
   const ver = res.stdout.toString().trim()
-  if (res.status === 0 && ver.length > 0) {
+  const expectedVersion = JSON.parse(readFileSync(resolve('package.json'), 'utf8')).version
+  if (res.status === 0 && ver === expectedVersion) {
     pass(2, `CLI --version executed cleanly with stripped PATH (${ver})`)
   } else {
     throw new Error(`Non-zero exit (${res.status}): ${res.stderr.toString()}`)

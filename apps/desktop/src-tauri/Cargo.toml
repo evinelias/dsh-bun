@@ -1,6 +1,6 @@
 [package]
 name = "dsh-desktop"
-version = "0.2.1"
+version = "0.2.2-alpha.2"
 description = "DeepSeek Harness Desktop (Bun + Elysia + Tauri v2)"
 authors = ["DeepSeek AI"]
 edition = "2021"

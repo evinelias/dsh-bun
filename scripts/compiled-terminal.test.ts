@@ -1,11 +1,12 @@
 import { expect, test } from 'bun:test'
 import { spawnSync } from 'node:child_process'
-import { rmSync, writeFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
 test.skipIf(process.platform === 'win32')('compiled runtime opens a real PTY and loads its lazy dependencies and package metadata', () => {
-  const source = resolve('dist/terminal-check.ts')
-  const executable = resolve('dist/terminal-check')
+  const root = mkdtempSync(join(resolve('dist'), 'terminal-check-'))
+  const source = join(root, 'terminal-check.ts')
+  const executable = join(root, 'terminal-check')
   try {
     writeFileSync(source, `
       import assert from 'node:assert/strict'
@@ -19,7 +20,7 @@ test.skipIf(process.platform === 'win32')('compiled runtime opens a real PTY and
       assert.equal(typeof load('sharp'), 'function')
       const require = createRequire(process.execPath)
       for (const name of ['dsh-llm','dsh-skill','dsh-tools','dsh-experimental-auto-review','dsh-experimental-voice-input-bundle']) {
-        assert.equal(require('@deepseek-ai/'+name+'/package.json').version, '0.2.1-rc.3')
+        assert.equal(require('@deepseek-ai/'+name+'/package.json').version, '0.2.2-alpha.2')
       }
       let output = ''
       await new Promise((resolve, reject) => {
@@ -35,7 +36,6 @@ test.skipIf(process.platform === 'win32')('compiled runtime opens a real PTY and
     const run = spawnSync(executable, [], { cwd: '/tmp', encoding: 'utf8', timeout: 15000 })
     expect(run.status, run.stderr).toBe(0)
   } finally {
-    rmSync(source, { force: true })
-    rmSync(executable, { force: true })
+    rmSync(root, { recursive: true, force: true })
   }
 }, 30000)
