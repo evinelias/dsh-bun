@@ -19,7 +19,7 @@ test.skipIf(process.platform === 'win32')('compiled runtime opens a real PTY and
       assert.equal(typeof load('sharp'), 'function')
       const require = createRequire(process.execPath)
       for (const name of ['dsh-llm','dsh-skill','dsh-tools','dsh-experimental-auto-review','dsh-experimental-voice-input-bundle']) {
-        assert.equal(require('@deepseek-ai/'+name+'/package.json').version, '0.2.1-rc.3')
+        assert.equal(require('@deepseek-ai/'+name+'/package.json').version, '0.2.2-alpha.2')
       }
       let output = ''
       await new Promise((resolve, reject) => {
