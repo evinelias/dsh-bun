@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.1-rc.3",
+  "version": "0.2.2-alpha.2",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -15,7 +15,11 @@
     "python/sdk-runtime"
   ],
   "scripts": {
+    "build:web": "bun run --cwd apps/web build",
+    "test:plugins": "bun scripts/verify-plugins.ts",
+    "test:clean-binary": "bun scripts/verify-clean-binary.ts",
     "build:client": "bun scripts/build-client-packages.ts",
+    "build:binary": "bun run build:client && bun scripts/generate-builtin-registry.ts && bun build apps/cli/src/bin.ts --compile --outfile dist/dsh-bun && bun scripts/package-native-system.ts dist && bun scripts/package-builtin-assets.ts dist",
     "typecheck:contracts-ready": "tsc -b tsconfig.client.json",
     "lint": "bun scripts/compile-referenced-projects.ts host-contracts && bun run lint:contracts-ready",
     "lint:contracts-ready": "bun scripts/run-oxlint.ts .",

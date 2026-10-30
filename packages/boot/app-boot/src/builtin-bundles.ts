@@ -23,7 +23,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-base': {
     manifest: {
       name: '@deepseek-ai/dsh-base',
-      version: '0.2.1-rc.2',
+      version: '0.2.2-alpha.2',
       dsh: {
         bundle: {
           patch: './cordis.patch.yml',
@@ -37,7 +37,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-web-app': {
     manifest: {
       name: '@deepseek-ai/dsh-web-app',
-      version: '0.2.1-rc.2',
+      version: '0.2.2-alpha.2',
       dsh: {
         bundle: {
           patch: [
@@ -61,7 +61,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-headless': {
     manifest: {
       name: '@deepseek-ai/dsh-headless',
-      version: '0.2.1-rc.2',
+      version: '0.2.2-alpha.2',
       dsh: {
         bundle: {
           patch: './cordis.patch.yml',

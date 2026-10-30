@@ -45,7 +45,7 @@ export function getDshRuntimeVersion(): string {
   // The executable's virtual filesystem intercepts string paths, not URL arguments.
   const filename = fileURLToPath(new URL('../package.json', import.meta.url))
   // shortcut: compiled builds omit this manifest; update the fallback when syncing upstream.
-  if (!fs.existsSync(filename)) return '0.2.1-rc.2'
+  if (!fs.existsSync(filename)) return '0.2.2-alpha.2'
   const manifest = objectOf(JSON.parse(fs.readFileSync(filename, 'utf8')), 'app-boot package.json')
   return runtimeVersionOf(Object.hasOwn(manifest, 'version') ? manifest.version : undefined)
 }

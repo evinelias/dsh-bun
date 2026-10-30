@@ -84,7 +84,12 @@ export async function runCli(options: RunCliOptions = {}): Promise<void> {
 }
 
 if (import.meta.main) {
-  runCli().catch((err) => {
+  const selection = process.env.DSH_SUBPROCESS_RUNNER
+  Reflect.deleteProperty(process.env, 'DSH_SUBPROCESS_RUNNER')
+  const run = selection === undefined
+    ? runCli()
+    : import('@deepseek-ai/dsh-subprocess-local/runner').then(module => module.runSelectedSubprocessRunner(selection))
+  run.catch((err) => {
     console.error(err)
     process.exit(1)
   })
