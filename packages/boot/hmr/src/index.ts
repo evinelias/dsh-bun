@@ -308,6 +308,9 @@ class Hmr extends Service {
     super(ctx, 'hmr')
     this.ownerContext = ctx
     if (!this.ctx.loader.internal) {
+      // SAFETY: Bun's loader exposes no Node ModuleLoader. Typing the field nullable needs a
+      // guard at each of its readers, which not all have yet.
+      // oxlint-disable-next-line typescript/no-explicit-any, typescript/no-unsafe-assignment
       this.internal = null as any
       this.baseDir = ''
       return
@@ -473,7 +476,10 @@ class Hmr extends Service {
           loader.exit()
           return
         }
-        for (const include of includes) await include.refresh()
+        for (const include of includes) {
+          // A rejected refresh reports unsaved runtime changes; Include keeps its running tree.
+          try { await include.refresh() } catch (error) { this.ctx.logger.warn(error) }
+        }
         if (this.stashed.size > 0) {
           try { await this.partialReload() } finally { this.stashed.clear() }
         }
@@ -682,10 +688,12 @@ class Hmr extends Service {
       activated: Fiber[] = [],
     ) => {
       for (const [previousFiber, implementation] of replacements.getActiveImplementations(this.ctx, plugin, fibers)) {
-        const fiber = previousFiber.fiber.parent.registry.plugin(implementation, previousFiber.config, this.getOuterStack).ctx.fiber
+        const wrapper = previousFiber.fiber.parent.registry.plugin(implementation, previousFiber.config, this.getOuterStack)
+        const fiber = wrapper.ctx.fiber
         if (previousFiber.entry !== undefined) {
           fiber.entry = previousFiber.entry
-          previousFiber.entry.fiber = fiber
+          // Like Loader activation, store the registry wrapper; identity checks compare `.ctx.fiber`.
+          previousFiber.entry.fiber = wrapper
         }
         activated.push(fiber)
       }
@@ -835,7 +843,7 @@ class Hmr extends Service {
       const owner = (fiber: Fiber): Entry | undefined => {
         for (let current = fiber; current.uid !== 0; current = current.parent.fiber) {
           const entry = current.entry
-          if (entry?.fiber === current && managed.has(entry) && affectedFibers.has(current)) return entry
+          if (entry?.fiber?.ctx.fiber === current && managed.has(entry) && affectedFibers.has(current)) return entry
         }
         return undefined
       }

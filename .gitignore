@@ -52,3 +52,6 @@ apps/desktop/src-tauri/binaries/
 dist/
 *.exe
 target/
+
+# Generated company-signed CUA release record.
+/packages/experimental/cua-macos/cua-helper.json

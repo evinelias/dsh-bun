@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh",
   "description": "dsh CLI: profile launch, plugin management, and configuration inspection",
-  "version": "0.2.2-alpha.2",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },
@@ -256,7 +256,9 @@
     "js-yaml": "^4.3.2",
     "node-addon-require-builtin": "^0.1.9",
     "@deepseek-ai/dsh-personalized-recommendations": "workspace:*",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "@deepseek-ai/dsh-experimental-liveshare": "workspace:*",
+    "@deepseek-ai/dsh-experimental-forge-bundle": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-skill-badge": "workspace:*",

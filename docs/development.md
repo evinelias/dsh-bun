@@ -66,6 +66,8 @@ The repository uses isolated Host and Client aggregates. An ordinary package is 
 | `tsconfig.base.json` | Shared compilerOptions and the source `paths` map. Also the resolution facade the vitest configs point vite-tsconfig-paths at: it has no `include`, so its `paths` apply to every importer. | No |
 | `tsconfig.base.client.json` | Browser compiler settings (`jsx`, DOM libs, `types: []`) extended by the Client aggregate and every `packages/client/*` package. | No |
 
+Host and Client aggregate type checks run with an 8 GiB Node old-space limit. This is a per-compiler limit; concurrent build steps need additional memory. `pnpm run build:official --serial` prevents build steps from overlapping, even with `DSH_GATE_CONCURRENCY` set; the DSH publication workflow uses this option.
+
 Host and Client stay two aggregate programs because both sides declaration-merge the cordis `Context` interface under the same keys with different services; one program seeing both merges reports a collision. The collision exists only inside a `ts.Program` — module resolution never triggers it — which is why the solution may reference both aggregates and one paths facade may span both sides. Three disciplines follow:
 
 - `tsconfig.base.json` never gains `include` or `files`: they would leak into every extending package project and narrow the facade's match-all scope.
@@ -152,6 +154,8 @@ Apart from the scoped pairing and provider metadata checks, the hooks intentiona
 Contributors can opt into the comprehensive local gate set with `pnpm run check:all`. The command is independent of the Git hooks and is not an agent instruction.
 
 Outside CI (`CI` other than `true`), default worker counts follow the [local worker budget](../scripts/parallelism.ts): 12 for gate schedulers, `build`, `typecheck`, Oxlint, and publint, and 48 for Vitest forks and local coverage. `doc-sync`, `test:docs`, `hygiene`, and `check:all` run at most 8 gates at once, in CI as well. `os.availableParallelism()` reports host CPUs rather than a container's CPU quota, so uncapped defaults oversubscribe shared hosts. CI keeps the runner's CPU count. `DSH_GATE_CONCURRENCY`, `DSH_OXLINT_THREADS`, `DSH_COVERAGE_MAX_WORKERS`, and Vitest `--maxWorkers` override the defaults.
+
+`run-gates` gives the CLI help generator one child at a time; direct `pnpm run verify-cli-help` uses the standalone worker budget. `DSH_CLI_HELP_CONCURRENCY` overrides that child limit with a positive integer validated before startup. Each invocation retains its private `DSH_HOME` and `DSH_AGENTS_HOME` and 30-second deadline.
 
 ### CI gates
 

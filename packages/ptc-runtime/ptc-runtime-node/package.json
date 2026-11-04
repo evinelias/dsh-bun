@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-ptc-runtime-node",
-  "description": "Node PTC execution with per-call sandboxed processes or in-memory REPL state",
-  "version": "0.2.2-alpha.2",
+  "description": "Node PTC execution with async function, REPL and VM Script evaluators and optional retained state",
+  "version": "0.2.2-alpha.3",
   "publishConfig": {
     "access": "public"
   },
@@ -20,6 +20,10 @@
       "default": "./lib/index.js"
     },
     "./package.json": "./package.json",
+    "./configuration": {
+      "types": "./lib/types/configuration.d.ts",
+      "default": "./lib/configuration.js"
+    },
     "./process": {
       "bun": "./src/process.ts",
       "types": "./lib/types/process-entry.d.ts",
@@ -30,6 +34,7 @@
   "files": [
     "locale/*.json",
     "lib/index.js",
+    "lib/configuration.js",
     "lib/process.js",
     "lib/persistent-process.js",
     "lib/types/**/*.d.ts"
@@ -48,6 +53,8 @@
   "dependencies": {
     "@deepseek-ai/dsh-util-values": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~",
+    "acorn": "^8.18.0",
+    "acorn-walk": "^8.3.5",
     "birpc": "4.2.0"
   },
   "devDependencies": {
