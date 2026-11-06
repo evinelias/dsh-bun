@@ -4,7 +4,9 @@ import { readFile } from 'node:fs/promises'
 import { dirname, extname } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { types } from 'node:util'
-import { registerHooks, type ImportAttributes, type ResolveFnOutput } from 'node:module'
+import type { ImportAttributes, ResolveFnOutput } from 'node:module'
+import * as nodeModule from 'node:module'
+const registerHooks = (nodeModule as { registerHooks?: (hooks: unknown) => { deregister(): void } }).registerHooks
 import type { ProgramImportHandler } from '../evaluators/types.ts'
 import { ImportEvaluationEndedError } from './evaluation-ended.ts'
 
@@ -210,12 +212,17 @@ export class VmModuleImportLoader {
 
 /** Resolve with the native loader's conditions and flags while retaining the importing filename. */
 function resolveImport(specifier: string, parentURL: string): ResolveFnOutput {
+  if (typeof registerHooks !== 'function') {
+    const url = import.meta.resolve(specifier, parentURL)
+    const format = url.endsWith('.mjs') || url.endsWith('.js') || url.endsWith('.ts') ? 'module' : undefined
+    return { url, format }
+  }
   const marker = 'dsh-ptc:resolve'
   let format: ResolveFnOutput['format']
   const hooks = registerHooks({
-    resolve(request, context, nextResolve) {
+    resolve(request: string, context: unknown, nextResolve: (req: string, ctx: unknown) => { url: string; format?: ResolveFnOutput['format'] }) {
       if (request !== marker) return nextResolve(request, context)
-      const resolved = nextResolve(specifier, { ...context, parentURL })
+      const resolved = nextResolve(specifier, { ...(context as Record<string, unknown>), parentURL })
       format = resolved.format
       return resolved
     },
