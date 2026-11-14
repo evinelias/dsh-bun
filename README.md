@@ -4,9 +4,9 @@
 > Completely eliminates Node.js, pnpm, and Electron while preserving the upstream **Cordis** kernel, official Web UI, and plugin ecosystem compatibility.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Bun](https://img.shields.io/badge/Bun->=1.3.14-black?logo=bun)](https://bun.sh)
-[![Elysia](https://img.shields.io/badge/Elysia-v1.4-blueviolet)](https://elysiajs.com)
-[![Tauri](https://img.shields.io/badge/Tauri-v2-24C8DB?logo=tauri)](https://v2.tauri.app)
+[![Bun](https://img.shields.io/badge/Bun->=1.4.0-black?logo=bun)](https://bun.sh)
+[![Elysia](https://img.shields.io/badge/Elysia-v1.4.32-blueviolet)](https://elysiajs.com)
+[![Tauri](https://img.shields.io/badge/Tauri-v2.12.5-24C8DB?logo=tauri)](https://v2.tauri.app)
 
 ---
 
@@ -15,7 +15,7 @@
 | Audience | Target | Prerequisite | Notes |
 | :--- | :--- | :--- | :--- |
 | **End-User (Desktop / Binary)** | Standalone App / CLI | **None** | Zero external Node.js, Bun, or pnpm required |
-| **Contributor / Developer** | Source Build & CI | **Bun >= 1.3.14** | Tested on `Bun 1.3.x` / `latest` across Linux, macOS, Windows |
+| **Contributor / Developer** | Source Build & CI | **Bun >= 1.4.0** | Tested on `Bun 1.4.x` across Linux, macOS, Windows |
 | **Desktop Shell Packager** | Tauri v2 Installer | **Rust >= 1.75** | Optional; only needed to compile the Tauri native shell |
 
 ---

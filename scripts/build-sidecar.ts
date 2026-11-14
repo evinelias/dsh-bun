@@ -159,10 +159,11 @@ function main(): void {
   mkdirSync(binariesDir, { recursive: true })
   const sidecarPath = join(binariesDir, sidecarName)
 
-  // 4. Compile standalone sidecar binary
+  // 4. Compile standalone sidecar binary (supports optional Ahead-Of-Time bytecode via BUN_AOT=1)
   const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
-  console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${targetFlag}...`)
-  execSync(`bun build apps/cli/src/bin.ts --compile ${targetFlag} --outfile "${sidecarPath}"`, {
+  const aotFlag = process.env.BUN_AOT === '1' ? '--bytecode' : ''
+  console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${aotFlag} ${targetFlag}...`)
+  execSync(`bun build apps/cli/src/bin.ts --compile ${aotFlag} ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
     stdio: 'inherit',
   })
