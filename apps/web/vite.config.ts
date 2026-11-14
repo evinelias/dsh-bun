@@ -252,6 +252,10 @@ export default defineConfig({
       { find: /^node:module$/, replacement: src('./src/node-module-stub.ts') },
       { find: '@deepseek-ai/dsh-client-ui-theme/brand-font.css', replacement: src('../../packages/client/ui-theme/src/styles/brand-font.css') },
       { find: '@deepseek-ai/dsh-client-web', replacement: src('../../packages/client/web/src/index.ts') },
+      { find: '@deepseek-ai/dsh-client-store', replacement: src('../../packages/client/store/lib/index.js') },
+      { find: '@deepseek-ai/dsh-client-ui-slots', replacement: src('../../packages/client/ui-slots/lib/index.js') },
+      { find: '@deepseek-ai/dsh-client-ui-primitives', replacement: src('../../packages/client/ui-primitives/lib/index.js') },
+      { find: '@deepseek-ai/dsh-client-ui-dockkit', replacement: src('../../packages/client/ui-dockkit/lib/index.js') },
     ],
   },
   define: {

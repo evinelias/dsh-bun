@@ -76,10 +76,18 @@ async function main() {
   const pkgs = walk(join(root, 'packages'))
   const clientDirs: { name: string; dir: string }[] = []
 
+  const STATIC_CLIENT_PACKAGES = new Set([
+    '@deepseek-ai/dsh-client-store',
+    '@deepseek-ai/dsh-client-ui-slots',
+    '@deepseek-ai/dsh-client-ui-primitives',
+    '@deepseek-ai/dsh-client-ui-dockkit',
+    '@deepseek-ai/dsh-client-web',
+  ])
+
   for (const p of pkgs) {
     try {
       const json = JSON.parse(readFileSync(p, 'utf8'))
-      if (json.dsh && json.dsh.client) {
+      if ((json.dsh && json.dsh.client) || STATIC_CLIENT_PACKAGES.has(json.name)) {
         const dir = dirname(p)
         if (existsSync(join(dir, 'tsdown.config.ts'))) {
           clientDirs.push({ name: json.name, dir })
