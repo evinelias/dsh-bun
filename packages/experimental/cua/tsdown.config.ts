@@ -15,6 +15,10 @@ const runtime: UserConfig[] = Object.entries({
   bridge: resolveCuaEntry('bridge'),
   'native-client': resolveCuaEntry('native-client'),
   protocol: resolveCuaEntry('protocol'),
+  config: resolveCuaEntry('config'),
+  'native-schema': resolveCuaEntry('native-schema'),
+  'native-build': resolveCuaEntry('native-build'),
+  guidance: resolveCuaEntry('guidance'),
 }).map(([name, path]) => ({
   entry: { [name]: path },
   outDir: 'lib', format: ['esm'], platform: 'node', target: 'es2024',

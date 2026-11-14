@@ -162,6 +162,11 @@ const SDK_ASSERTIONS: Readonly<Record<string, SdkAssertions>> = {
     },
   },
   'desktop-ptc-context': { expectedFinalResponse: 'SDK snapshot OK' },
+  'cua-run-code': {
+    expectedFinalResponse: 'The retained application and window report Count: 2. The counter persisted across calls, and the program exposes only tools.cua. The screenshot was attached after the first call.',
+    environment: { DSH_PERMISSION_MODE: 'danger-full-access' },
+    patches: [fileURLToPath(new URL('./cua-run-code/runtime.cordis.yml', import.meta.url))],
+  },
   'manual-compact': {
     expectedFinalResponse: 'SDK_COMPACT_OK',
     patches: [fileURLToPath(new URL('./manual-compact/capture.cordis.yml', import.meta.url))],
@@ -801,7 +806,10 @@ async function runScenario(scenario: CorpusScenario): Promise<{
     ignoredRootEntries: RUNTIME_WORKSPACE_ENTRIES,
   })
   const [parentFixture, ...childFixtures] = replayFixtures
-  const actions = sdkActions(primaryFixture, assertions.replayStandaloneCommands === true)
+  const recordedActions = sdkActions(primaryFixture, assertions.replayStandaloneCommands === true)
+  const actions = scenario.name === 'serial-created'
+    ? recordedActions.filter(action => action.kind === 'turn' && action.content !== undefined)
+    : recordedActions
   const resumeReplayFile = scenario.name === 'session-resume' && !recording
     ? join(patchRoot, 'resume-replay.json') : undefined
   const prepareTurnReplay = async (turn: number): Promise<void> => {
@@ -1020,6 +1028,9 @@ async function runScenario(scenario: CorpusScenario): Promise<{
           observe,
         )
       }
+      if (scenario.name === 'serial-created') {
+        await harness.client.request('session/wait', { sessionId })
+      }
       for (const type of postActionEventTypes(primaryFixture)) {
         await waitForRootEvent(subscription, sessionId, event => event.type === type, observe)
       }
@@ -1224,7 +1235,7 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
         expect((first.tools as JsonObject[]).map(tool => tool.name)).toEqual(expect.arrayContaining([
           'team_task_create', 'team_task_get', 'team_task_list', 'team_task_update',
         ]))
-        expect(JSON.stringify(first.messages)).toContain('shared task board')
+        expect(JSON.stringify(first.messages)).toContain('Agent Teams is available in this session.')
         expect(events.filter(event => event.type === 'team/task').map(event => event.data.task))
           .toEqual([expect.objectContaining({ subject: 'Configured Team', status: 'pending' })])
         expect(events.filter(event => event.type === 'tool/result').map(event => event.data.message.isError))
@@ -1236,7 +1247,7 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
         expect(JSON.stringify(childResults)).toContain('Configured Team')
         for (const request of modelRequests) {
           expect((request.tools as JsonObject[]).map(tool => tool.name)).toContain('team_task_list')
-          expect(JSON.stringify(request.messages)).toContain('shared task board')
+          expect(JSON.stringify(request.messages)).toContain('Agent Teams is available in this session.')
         }
       }
       if (scenario.name === 'command-attachments') {
@@ -1754,6 +1765,11 @@ describe('TypeScript SDK snapshots over the jsonrpc runtime', () => {
       }
       if (scenario.name === 'serial-created') {
         expect(observedMethods.has('subagent.started')).toBe(false)
+        const turns = parseSessionLog(ordered[0]!.content).filter(event => event.type === 'turn/end')
+        expect(turns.map(event => event.data.reason)).toEqual([
+          { kind: 'aborted', reason: { kind: 'user' } },
+          { kind: 'completed' },
+        ])
       }
       if (ordered.length > 1 && assertions.dshSdkChild === undefined) {
         expect(observedMethods.has('subagent.started')).toBe(true)

@@ -31,7 +31,7 @@ kind: "package-reference"
 图片拖放回调通过图片入口的注入接口从 [ui-file-drag](../ui-file-drag/README.zh.md) 获取。
 
 - **类型** —— `ctx.sidebarRightTabs.register(...)`，id 为 `@deepseek-ai/dsh-client-ui-sidebar-documentpreview`（这个实现在 tab 系统中的身份，也是其正文注册所用的键），kind `text`，匹配完整文件资源地址的 pattern，档位 `fallback`。`canOpen` 只接受 Session 地址，其中路径可为相对或绝对路径；不认领裸 `absolute` 地址。在 `extension` 或 `builtin` 档以更窄 pattern（比如 `*.png`）注册的类型接走那些地址；其他受支持文件落到这里。整个地址就是内容身份，所以不同目录下同名的两个文件、或同一路径在两个会话之下，是两个 tab；解码后的 basename 是 tab 标题，keyed slot `sidebar.right.pane.tab.title` 会在标题前放置按扩展名选择的 `FileTypeIcon`。
-- **正文** —— keyed slot `sidebar.right.pane.tab`，键为类型的 id。固定头部在可用时显示 Host 的绝对路径，否则显示请求路径；共享的 [`PathLabel`](../ui-primitives/README.zh.md#component-catalog) 弱化目录颜色，以左侧渐隐保留被裁剪路径的尾部字符，并在悬停时展示完整值。有多个受支持的渲染器时才显示下拉菜单。仅文本兼容的源文件提供纯文本选项；只有一个渲染器时不显示查看器控件。已知的二进制容器后缀没有注册渲染器时，在路径头部下方显示文件类型图标和不支持预览的说明，并且不会发起读取。两个 Session 作用域的 list 子 slot 在文件元数据报出 Host 路径后把当前文件交给其他插件，owner prop 为 `absolutePath`：`sidebar.right.tab.document.actions` 在每个显示头部的状态里渲染在头部自有控件之后、导航栏开关之前，位置在各状态间相同，因此状态切换时不会重新挂载；`sidebar.right.tab.document.unpreviewable` 渲染在不支持预览的空态里，以及可读但本预览无法渲染的文件（`not-text`、`too-large`）的空态里，占据原本放重试的位置；载体或未分类的读取失败仍保留重试，不存在或非普通文件的路径只给说明。两者已发布的占位者都是 [`ui-open-in-app`](../ui-open-in-app/README.zh.md)。预览直接渲染 [`ui-sidebar-files`](../ui-sidebar-files/README.zh.md#the-navigator) 的 Session 作用域 Factory：`sidebar.files.navigator` 位于内容行的正文之后，传入 `{ useTabInfo, page: false, onOpen }`，其中 `onOpen(address)` 调用 `tab.actions.openResource(address, { replaceTab: true })`；`sidebar.files.navigator.toggle` 位于头部末端，传入 `{ useTabInfo }`。两者在停靠与浮动分栏中从加载到完成保持挂载；未注册的 Factory 不绘制内容。导航栏在内容行的定位框与层叠上下文内决定宽度，让正文变窄或覆盖正文，不遮挡浮窗缩放手柄。自行处理 Escape 的渲染器浮层需调用 `preventDefault()`，避免同时关闭导航栏。仅当所选渲染器声明 `wrap: true` 时显示换行开关；图标表示点击后切换到的模式，该偏好按 tab 保存，初始开启。重新载入仍在此头部，不放入 Sidebar 的 tab 条。自动刷新默认开启；独立开关暂时隐藏，状态、文案、样式与切换逻辑保留。正文贴合格的每条边，各渲染器自行提供内容留白，并可拥有内部滚动区。这与文件树右侧预留 2px 滚动条间距的布局有意不同：Preview 使用格的完整宽度，使贴边 HTML 与代码滚动区终止于格的边缘。
+- **正文** —— keyed slot `sidebar.right.pane.tab`，键为类型的 id。固定头部在可用时显示 Host 的绝对路径，否则显示请求路径；共享的 [`PathLabel`](../ui-primitives/README.zh.md#component-catalog) 弱化目录颜色，以左侧渐隐保留被裁剪路径的尾部字符，并在悬停时展示完整值。有多个受支持的渲染器时才显示下拉菜单。仅文本兼容的源文件提供纯文本选项；只有一个渲染器时不显示查看器控件。已知的二进制容器后缀没有注册渲染器时，在路径头部下方显示文件类型图标和不支持预览的说明，并且不会发起读取。两个 Session 作用域的 list 子 slot 在文件元数据报出 Host 路径后把当前文件交给其他插件，owner prop 为 `absolutePath`：`sidebar.right.tab.document.actions` 在每个显示头部的状态里渲染在头部自有控件之后、导航栏开关之前，位置在各状态间相同，因此状态切换时不会重新挂载；`sidebar.right.tab.document.unpreviewable` 渲染在不支持预览的空态里，以及可读但本预览无法渲染的文件（`not-text`、`too-large`）的空态里，占据原本放重试的位置；载体或未分类的读取失败仍保留重试，不存在或非普通文件的路径只给说明。两者已发布的占位者都是 [`ui-open-in-app`](../ui-open-in-app/README.zh.md)。预览直接渲染 [`ui-sidebar-files`](../ui-sidebar-files/README.zh.md#the-navigator) 的 Session 作用域 Factory：`sidebar.files.navigator` 位于内容行的正文之后（该行带有 `data-files-navigator-row`），传入 `{ useTabInfo, page: false, onOpen }`，其中 `onOpen(address)` 调用 `tab.actions.openResource(address, { replaceTab: true })`；`sidebar.files.navigator.toggle` 位于头部末端，传入 `{ useTabInfo }`。两者在停靠与浮动分栏中从加载到完成保持挂载；未注册的 Factory 不绘制内容。导航栏在内容行的定位框与层叠上下文内决定宽度，让正文变窄或覆盖正文，不遮挡浮窗缩放手柄。自行处理 Escape 的渲染器浮层需调用 `preventDefault()`，避免同时关闭导航栏。仅当所选渲染器声明 `wrap: true` 时显示换行开关；图标表示点击后切换到的模式，该偏好按 tab 保存，初始开启。重新载入仍在此头部，不放入 Sidebar 的 tab 条。自动刷新默认开启；独立开关暂时隐藏，状态、文案、样式与切换逻辑保留。正文贴合格的每条边，各渲染器自行提供内容留白，并可拥有内部滚动区。这与文件树右侧预留 2px 滚动条间距的布局有意不同：Preview 使用格的完整宽度，使贴边 HTML 与代码滚动区终止于格的边缘。
 - **共享加载与视图状态**，会话作用域、按 tab id 分桶。store 持有累计页或完整字节、读取与观察版本、待处理 Resource 变化、自动刷新状态、加载/失败状态、渲染器选择、滚动位置、换行和已响应的导航 revision。普通 inject face 调用 Remote 读取，并经声明的 store action 写入。重新载入和加载模式变化会淘汰旧请求；tab 的中止信号清理其状态。
 
 文档实现在 `ctx.documentPreviews.register({ id, extensions, binaryExtensions?, priority, title, loading, wrap?, sourceLines? })` 注册元数据，并以相同 `id` 向 keyed、Session 作用域的子 slot `sidebar.right.tab.document` 注册正文。`binaryExtensions` 列出 `extensions` 中不可按文本阅读的后缀，这些后缀不提供纯文本选项。`sourceLines` 声明 `text-pages` 正文为[导航](#navigation)提供源码行锚点。两处注册都由 effect 持有，通过 `ctx.slots.inject` 等待子 slot。正文接收 `resourceAddress`、`content`、`wrap`、`scrollportRef`、`addResource`、`setResources` 和标准 `useTabInfo`/`useResource` 钩子。依赖成员由 tab 持有的 `ResourceGroup` 管理；替换依赖始终保留根 Resource。内部滚动元素挂载 `scrollportRef`；卸载时恢复共享正文的滚动职责。注册表保留所有匹配备选：`extension`（默认）优先于 `builtin`，随后按更长的后缀、再按注册顺序排列。所选实现仍可用时，下拉选择保持不变。HTML、SVG 和未匹配的扩展名保留纯文本回退，与加载方式无关。
@@ -95,7 +95,7 @@ CSV 和 TSV 默认使用表格查看器，也可选择纯文本；CSV 还提供�
 <a id="office-preview"></a>
 ## Office 预览
 
-将 `.doc`、`.docx`、`.ppt` 和 `.pptx` 打开为 PDF 预览，使用与 PDF 文件相同的加载状态、缩放控件、取消和文本选择能力。[Host 提供方](../../document/office-to-pdf/README.zh.md)负责本地转换，并为其他消费者保留电子表格转换 API。受支持的无效文件、转换失败和超时会显示本地化消息。缺少 Host 服务时显示配置引导。
+将 `.doc`、`.docx`、`.ppt` 和 `.pptx` 打开为 PDF 预览，使用与 PDF 文件相同的加载状态、缩放控件、取消和文本选择能力。[Host 提供方](../../document/office-kit/README.zh.md)负责本地转换，并为其他消费者保留电子表格转换 API。受支持的无效文件、转换失败和超时会显示本地化消息。缺少 Host 服务时显示配置引导。
 
 [Web bundle](../../bundle/web-app/README.zh.md) 以 `ui-sidebar-documentpreview` 挂载本包。通过该条目的 `office` 设置配置临时 Office 缓存；[配置目录](../../../docs/config-catalog.zh.md#deepseek-aidsh-client-ui-sidebar-documentpreview)定义可接受的值。设置注入到每个页面；修改 YAML 后重新加载浏览器页面。
 
@@ -114,7 +114,7 @@ CSV 和 TSV 默认使用表格查看器，也可选择纯文本；CSV 还提供�
 <details>
 <summary>Office 实现——点击展开</summary>
 
-Office 注册、加载、缓存和字体提示位于 `src/client/office/`。注入的 Office face 通过已声明的 store action 写入转换后的 PDF 字节、字体元数据和失败。Office 正文触发加载，将取消绑定到自身生命周期，并声明嵌套 PDF slot，复用惰性 PDF 正文及其 tab 阅读状态。keyed slot `sidebar.right.tab.document.action` 将渲染器操作放在刷新按钮前。Office 操作与正文共享 store，仅读取当前 revision 的字体元数据。Host 渲染器缺失时，注册仍然可用；可选的 `remote.officeToPdf` 和 `remote.workspaceFiles` 注入提供转换与版本检查回调，移除后恢复不可用提示。注册和 tab 状态保留都遵循 effect 生命周期。[转换服务](../../document/office-to-pdf/README.zh.md)拥有 Host Remote 方法，由 `api/remotes` 挂载。
+Office 注册、加载、缓存和字体提示位于 `src/client/office/`。注入的 Office face 通过已声明的 store action 写入转换后的 PDF 字节、字体元数据和失败。Office 正文触发加载，将取消绑定到自身生命周期，并声明嵌套 PDF slot，复用惰性 PDF 正文及其 tab 阅读状态。keyed slot `sidebar.right.tab.document.action` 将渲染器操作放在刷新按钮前。Office 操作与正文共享 store，仅读取当前 revision 的字体元数据。Host 渲染器缺失时，注册仍然可用；可选的 `remote.officeKit` 和 `remote.workspaceFiles` 注入提供转换与版本检查回调，移除后恢复不可用提示。注册和 tab 状态保留都遵循 effect 生命周期。[转换服务](../../document/office-kit/README.zh.md)拥有 Host Remote 方法，由 `api/remotes` 挂载。
 
 Office Remote 通过 Connection 的 multipart 二进制传输返回原生 `Uint8Array` PDF。渲染器以只读方式借用保留的字节，并在传给 Worker 前复制。
 
@@ -142,7 +142,7 @@ Office Remote 通过 Connection 的 multipart 二进制传输返回原生 `Uint8
 
 <a id="known-limitations-and-deferred-work"></a>
 - **预览而非编辑。** 查看器不提供文件编辑或共享搜索接口；目录地址以 `not-regular-file` 失败。未知扩展名使用纯文本读取，仍受其 UTF-8/NUL 检查限制。
-- **Office 转换限制。** 预览不启动原生 Office 编辑器，也不下载引擎。二进制 `.doc` 和 `.ppt` 文件不返回缺失字体诊断。转换保真度与资源限制由 [LibreOffice 提供方](../../document/office-to-pdf/README.zh.md)负责。
+- **Office 转换限制。** 预览不启动原生 Office 编辑器，也不下载引擎。二进制 `.doc` 和 `.ppt` 文件不返回缺失字体诊断。转换保真度与资源限制由 [LibreOffice 提供方](../../document/office-kit/README.zh.md)负责。
 - **文本顺序分页，完整文件受限。** 定位到较深处的源码行需要先加载此前各页；PDF、HTML 和图片必须取得 Host `maxFileBytes` 上限内的完整结果。
 - **PDF 栅格分配有上限。** 每页位图最多为 16,777,216 像素；超大页面或高像素密度屏幕上的高比例缩放仍可能低于设备分辨率。
 - **字节视图不恢复滚动位置。** PDF、HTML 与图片的渲染器重新挂载或重新载入时可能回到顶部；固定 PDF 与图片缩放可产生横向滚动，HTML iframe 的滚动属于其不透明浏览上下文。

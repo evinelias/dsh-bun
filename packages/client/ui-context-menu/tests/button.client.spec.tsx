@@ -4,12 +4,13 @@ import { afterEach, expect, it, onTestFinished, vi } from 'vitest'
 import { SlotTestRuntime } from '@deepseek-ai/dsh-client-test-runtime'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
-import { SessionId } from '@deepseek-ai/dsh-session/types'
+import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import type { Context } from '@deepseek-ai/cordis'
 import { useState } from 'react'
 import { apply, inject } from '../src/client/index.ts'
 import type { ContextMenuTarget, MenuAction } from '../src/client/types.ts'
 import { isContextMenuTrigger } from '../src/client/external-trigger.ts'
+import { brandString } from '@deepseek-ai/dsh-brand'
 
 declare module '@deepseek-ai/dsh-client-ui-context-menu/client' {
   interface ContextMenuTargetMap {
@@ -18,7 +19,7 @@ declare module '@deepseek-ai/dsh-client-ui-context-menu/client' {
   }
 }
 
-const target = (id: string): ContextMenuTarget => ({ kind: 'header', value: { sessionId: SessionId(id) } })
+const target = (id: string): ContextMenuTarget => ({ kind: 'header', value: { sessionId: brandString<SessionId>(id) } })
 afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks() })
 
 it('shows late registered kinds without preparing actions and withdraws them with the contributing fiber', async () => {
@@ -29,7 +30,7 @@ it('shows late registered kinds without preparing actions and withdraws them wit
   await runtime.root.declare({}, ({ renderFactorySlot }) => <>
     {renderFactorySlot('contextMenu.button', { target: target('header'), label: 'Header menu', size: 'sm' })}
     {renderFactorySlot('contextMenu.button', { target: { kind: 'session', value: {
-      sessionId: SessionId('row'), displayTitle: 'Row',
+      sessionId: brandString<SessionId>('row'), displayTitle: 'Row',
     } }, label: 'Row menu', className: 'row-control' })}
   </>)
   const view = runtime.renderRoot()
@@ -55,6 +56,28 @@ it('shows late registered kinds without preparing actions and withdraws them wit
   expect(view.queryByRole('button')).toBeNull()
   await plugin.dispose()
   expect(source.getSnapshot()).toEqual([])
+})
+
+it('shows the label tooltip on the compact toolbar button but not on row buttons', async () => {
+  const runtime = await SlotTestRuntime.create()
+  onTestFinished(() => runtime.dispose())
+  runtime.ctx.provide('shortcuts', { catalog: createSnapshotStore([]) } as never)
+  runtime.ctx.provide('locale', { register: () => () => {}, bind: () => (key: string) => key } as never)
+  await runtime.root.declare({}, ({ renderFactorySlot }) => <>
+    {renderFactorySlot('contextMenu.button', { target: target('header'), label: 'Header menu', size: 'sm' })}
+    {renderFactorySlot('contextMenu.button', { target: target('row'), label: 'Row menu' })}
+  </>)
+  await runtime.mount({ inject, apply })
+  await runtime.mount({ inject: ['contextMenus'], apply: (ctx: Context) => { ctx.effect(() => ctx.contextMenus.register({
+    id: 'header', target: 'header', order: 0, resolve: () => [],
+  })) } })
+  const view = runtime.renderRoot()
+  const row = view.getByRole('button', { name: 'Row menu' })
+  fireEvent.pointerEnter(row)
+  fireEvent.focus(row)
+  expect(view.queryByRole('tooltip')).toBeNull()
+  fireEvent.focus(view.getByRole('button', { name: 'Header menu' }))
+  expect(view.getByRole('tooltip').textContent).toBe('Header menu')
 })
 
 it('toggles moved buttons by target identity, replaces other targets, and preserves right-click distance rules', async () => {

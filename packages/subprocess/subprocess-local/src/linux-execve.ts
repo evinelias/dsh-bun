@@ -13,6 +13,7 @@ export type LinuxExecve = (
   argv: string[],
   env: Record<string, string>,
   control?: 'pipe',
+  pipeFds?: readonly number[],
 ) => never
 
 type NativeExecve = (
@@ -27,6 +28,9 @@ const STANDARD_FILE_DESCRIPTORS = [0, 1, 2] as const
 const F_GETFD = 1
 const F_SETFD = 2
 const FD_CLOEXEC = 1
+const F_GETFL = 3
+const F_SETFL = 4
+const O_NONBLOCK = 0x800
 
 let cachedExecve: LinuxExecve | undefined
 
@@ -57,7 +61,7 @@ export function loadLinuxExecve(): LinuxExecve {
   const nativeFcntl = libc.func(
     'int fcntl(int fd, int cmd, int arg)',
   ) as NativeFcntl
-  cachedExecve = (file, argv, env, control) => {
+  cachedExecve = (file, argv, env, control, pipeFds = []) => {
     const descriptors = control === 'pipe'
       ? [...STANDARD_FILE_DESCRIPTORS, SUBPROCESS_CONTROL_FD]
       : STANDARD_FILE_DESCRIPTORS
@@ -66,6 +70,15 @@ export function loadLinuxExecve(): LinuxExecve {
       if (flags === -1) throw systemError(koffi.errno(), 'fcntl')
       if ((flags & FD_CLOEXEC) === 0) continue
       if (nativeFcntl(fd, F_SETFD, flags & ~FD_CLOEXEC) === -1) {
+        throw systemError(koffi.errno(), 'fcntl')
+      }
+    }
+    // F_SETFL changes the open file description in every process sharing it.
+    // Only pipes created for this child are safe to make blocking for native targets.
+    for (const fd of pipeFds) {
+      const flags = nativeFcntl(fd, F_GETFL, 0)
+      if (flags === -1) throw systemError(koffi.errno(), 'fcntl')
+      if ((flags & O_NONBLOCK) !== 0 && nativeFcntl(fd, F_SETFL, flags & ~O_NONBLOCK) === -1) {
         throw systemError(koffi.errno(), 'fcntl')
       }
     }

@@ -33,25 +33,29 @@ Use the workflow tool ONLY when the user explicitly asks for a workflow or for l
 
 Start independent delegations with `subagent` or `subagent_fork` together in one assistant message and continue useful work while they run. When only waiting for their results remains, end your turn instead of sleeping or polling; the next result starts a new turn. Collect the subagent results required to complete the task before giving the user a final answer.
 
-Agents may use different working directories; changes to shared files affect other agents. Split parallel write work into disjoint file or directory scopes. Bash, formatters, code generators, and scripts can overwrite concurrent edits without conflict detection; coordinate their changes explicitly. The agent integrating the work must review the final diff and run relevant tests.
+Bash, formatters, code generators, and scripts can overwrite concurrent edits without conflict detection; coordinate their changes explicitly. The agent integrating the work must review the final diff and run relevant tests.
 
 ## Writing code for run_code
 
 `run_code` takes two required arguments: `code`, the program to execute, and `description`, a short summary of what the program does. The declarations below are SDK bindings for this program. A declaration does not make its name a directly callable tool; only names supplied as separate tool schemas may be called directly. When no separate `bash` schema is supplied, invoke a declared `bash` binding inside `run_code`:
 
-`run_code({ code: "console.log(await tools.bash({ description: 'Show current directory', command: 'pwd' }))", description: "Show current directory" })`
+`run_code({ code: "inspect(await tools.bash({ description: 'Show current directory', command: 'pwd' }))", description: "Show current directory" })`
 
 Inside the program:
 
-- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools["my-tool"](args)`. Every call resolves to the tool's typed canonical JSON value. Tool arguments must be lossless JSON.
+- Call tools as `await tools.name(args)` — quoted access for exotic names: `tools["my-tool"](args)`. Every call resolves to its declared value, which may be an Image. Tool arguments must be lossless JSON.
 - A FAILED tool call rejects with `ToolCallError`, whose `toolName` identifies the failed tool and whose `message` is human-readable — `try/catch` it to handle and continue.
 - Independent read-only calls MAY overlap under `Promise.all` (safe calls run concurrently; mutating calls run alone, in submission order). Sequence dependent work with `await`.
-- Only values emitted as program output enter the conversation. A successful tool result containing an image is attached after the run so you can inspect it on the next step; every other intermediate result stays out of the conversation, so extract just what you need.
+- Show selected values and images with `inspect(...values)`; every other intermediate result stays out of the conversation, so extract just what you need.
 
 Program-only SDK bindings:
 
 ```ts
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
+
+declare class Image { private constructor(); readonly attachmentId: string; readonly path: string; readonly width: number; readonly height: number; }
+
+declare function inspect(...values: unknown[]): void;
 
 interface ToolArgsMap {
   /** Create, update, delete, or move UTF-8 text files with one patch; prefer it over multiple edit calls when a change spans several files or separated regions. */
@@ -119,11 +123,6 @@ interface ToolArgsMap {
     path?: string;
     /** One glob filter for which files to search (e.g. "*.ts", "*.{js,jsx}"). Not a list; negation is not supported. */
     include?: string;
-  } & Record<string, JsonValue>;
-  /** Ask a subagent to stop its current work. This call returns without waiting for it to stop. You can continue a local subagent's conversation later with send_message. External executions stop permanently and cannot receive follow-ups. Subagents it started will keep running. */
-  interrupt_agent: {
-    /** The name of an agent created under you: your direct child or a deeper descendant. */
-    agent: string;
   } & Record<string, JsonValue>;
   /** Request cancellation of a running background job. */
   job_kill: {
@@ -393,9 +392,6 @@ interface ToolOutputMap {
       line: string;
     }[];
   };
-  interrupt_agent: {
-    accepted: boolean;
-  };
   job_kill: {
     outcome: "cancellation-requested" | "already-finished";
     job: {
@@ -444,22 +440,7 @@ interface ToolOutputMap {
     }[];
     totalLines: number;
   };
-  read_image: {
-    /** Canonical absolute path in the filesystem execution world. */
-    path: string;
-    image: {
-      attachmentId: string;
-      mediaType: "image/png" | "image/jpeg" | "image/webp" | "image/gif";
-      bytes: number;
-      width: number;
-      height: number;
-      name?: string;
-      originalDimensions?: {
-        width: number;
-        height: number;
-      };
-    };
-  };
+  read_image: Image;
   send_message: {
     messageId: string;
   };

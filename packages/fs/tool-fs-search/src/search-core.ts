@@ -19,9 +19,10 @@
  * @module @deepseek-ai/dsh-tool-fs-search/search-core
  */
 
-import { existsSync } from 'node:fs'
-import { isAbsolute, join, parse, relative, sep } from 'node:path'
+import { isAbsolute, relative, sep } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+import { spawnRipgrep } from '@deepseek-ai/dsh-util-ripgrep'
+export { resolveRgPath } from '@deepseek-ai/dsh-util-ripgrep'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import { ItemRetainer, TextRetainer } from '@deepseek-ai/dsh-output-retention'
 import type { RetainedItems } from '@deepseek-ai/dsh-output-retention'
@@ -154,48 +155,6 @@ function completeStdout(toolName: string, stdout: SubprocessOutputRead, rawOutpu
   )
 }
 
-let rgPathPromise: Promise<string> | undefined
-
-/**
- * The packaged ripgrep binary path, resolved lazily once per process.
- *
- * A single-file runtime uses the executable's `-rg` sidecar because a native
- * helper cannot be spawned from pkg's virtual filesystem. Node-mode builds
- * fall back to the platform package selected by `@vscode/ripgrep`. Resolving
- * at the call boundary keeps a missing or corrupt binary at the first search
- * call as `SEARCH_FAILED`, rather than failing the Loader composition.
- *
- * @returns the packaged binary's absolute path; the memoized promise rejects
- *   when the platform package cannot be resolved.
- */
-export function resolveRgPath(): Promise<string> {
-  rgPathPromise ??= Promise.resolve().then(async () => {
-    if ('pkg' in process) {
-      const executable = parse(process.execPath)
-      const executableSidecar = process.platform === 'win32'
-        ? join(executable.dir, `${executable.name}-rg.exe`)
-        : `${process.execPath}-rg`
-      if (existsSync(executableSidecar)) return executableSidecar
-
-      const bareRg = process.platform === 'win32' ? 'rg.exe' : 'rg'
-      const adjacentRg = join(executable.dir, bareRg)
-      if (existsSync(adjacentRg)) return adjacentRg
-
-      const adjacentBinariesRg = join(executable.dir, 'binaries', bareRg)
-      if (existsSync(adjacentBinariesRg)) return adjacentBinariesRg
-
-      const cwdRg = join(process.cwd(), bareRg)
-      if (existsSync(cwdRg)) return cwdRg
-    }
-
-    const dependency = (await import('@vscode/ripgrep')).rgPath
-    return process.versions.electron === undefined
-      ? dependency
-      : dependency.replace(/\.asar(?=[\\/])/u, '.asar.unpacked')
-  })
-  return rgPathPromise
-}
-
 /**
  * Run the packaged ripgrep binary with a plain argv vector and return its
  * complete raw stdout. The working directory is the calling agent's session
@@ -249,8 +208,8 @@ export async function runRipgrep(
     : await ctx.workingDirectory.ensure(exec.agent, exec.signal)
   let handle: SubprocessHandle
   try {
-    handle = ctx.subprocess.spawn({
-      argv: [await resolveRgPath(), '--no-config', ...argv],
+    handle = await spawnRipgrep(ctx.subprocess, {
+      argv,
       cwd: workdir,
       stdio: {
         stdin: 'ignore',
@@ -266,6 +225,7 @@ export async function runRipgrep(
     // above and this call (or when the platform-package resolution rejects).
     // The static narrowing that proves this re-check "always false" cannot
     // see AbortSignal state changes.
+    // oxlint-disable-next-line typescript/no-unnecessary-condition
     if (exec.signal.aborted) {
       throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
     }
@@ -284,6 +244,7 @@ export async function runRipgrep(
   }
   // The signal can abort while the spawn is awaited; the static narrowing that
   // proves this re-check "always false" cannot see AbortSignal state changes.
+  // oxlint-disable-next-line typescript/no-unnecessary-condition
   if (exec.signal.aborted) {
     throw new SearchError(`${toolName} was aborted before completion (tool timeout or caller cancellation)`, 'SEARCH_ABORTED')
   }
