@@ -15,6 +15,7 @@
   "types": "lib/types/index.d.ts",
   "exports": {
     ".": {
+      "bun": "./src/index.ts",
       "types": "./lib/types/index.d.ts",
       "default": "./lib/index.js"
     },
@@ -118,8 +119,7 @@
     "@deepseek-ai/dsh-session-projection-cache": "workspace:*",
     "@deepseek-ai/dsh-session-query": "workspace:*",
     "@deepseek-ai/dsh-api-remote-access": "workspace:*",
-    "@types/picomatch": "^4.0.3",
-    "@deepseek-ai/dsh-brand": "workspace:*"
+    "@types/picomatch": "^4.0.3"
   },
   "files": [
     "locale/*.json",

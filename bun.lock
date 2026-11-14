@@ -1308,6 +1308,13 @@
     "packages/browser-use/browser-use": {
       "name": "@deepseek-ai/dsh-browser-use",
       "version": "0.2.2-rc.3",
+      "devDependencies": {
+        "@deepseek-ai/cordis": "workspace:~",
+        "@deepseek-ai/dsh-brand": "workspace:*",
+      },
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "workspace:~",
+      },
     },
     "packages/bundle/acp-app": {
       "name": "@deepseek-ai/dsh-acp-app",
@@ -3872,6 +3879,13 @@
     "packages/computer-use/computer-use": {
       "name": "@deepseek-ai/dsh-computer-use",
       "version": "0.2.2-rc.3",
+      "devDependencies": {
+        "@deepseek-ai/cordis": "workspace:~",
+        "@deepseek-ai/dsh-brand": "workspace:*",
+      },
+      "peerDependencies": {
+        "@deepseek-ai/cordis": "workspace:~",
+      },
     },
     "packages/context/agent-instructions": {
       "name": "@deepseek-ai/dsh-agent-instructions",

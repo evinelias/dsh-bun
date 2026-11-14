@@ -1369,16 +1369,9 @@ export class PluginManager extends TypertRemoteService {
   private async reload(requiredIds: readonly string[] = []): Promise<Reload> {
     const hmr = this.ownerContext.get('hmr')
     if (hmr === undefined) {
-      ensurePackageRootIndices(join(this.profile.dir, 'node_modules'))
-      const patches = readProfilePatches('dsh', this.profile)
-      try {
-        const warnings = await reconcileProfilePatches(this.ownerContext.root, patches, 'dsh', requiredIds)
-        return { warnings }
-      } catch (error) {
-        this.ownerContext.logger.warn('Live profile patch reconciliation failed, falling back to restart-required', error)
-        composeEntries([patches])
-        return { warnings: [], restartReason: 'no-hmr' }
-      }
+      // Startup-only profiles recompose at restart; the saved patches still have to compose.
+      composeEntries([readProfilePatches('dsh', this.profile)])
+      return { warnings: [] }
     }
     const { warnings, pending, restartReason } = await hmr.reconcileProfile(requiredIds)
     const restart = restartReason ?? pending[0]?.reason

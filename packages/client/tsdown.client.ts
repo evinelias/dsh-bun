@@ -145,16 +145,43 @@ function browserSourcePath(source: string, sourcemapPath: string): string {
  * @returns ENV-selected tsdown config for the current build face.
  * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
  */
+function resolveEntry(packageDir: string, entry: string): string {
+  if (existsSync(join(packageDir, entry))) return entry
+  if (entry.startsWith('lib/types/') && entry.endsWith('.js')) {
+    const base = entry.slice('lib/types/'.length, -'.js'.length)
+    for (const ext of ['.ts', '.tsx', '.js']) {
+      const candidate = 'src/' + base + ext
+      if (existsSync(join(packageDir, candidate))) return candidate
+    }
+  }
+  return entry
+}
+
+function resolveClientEntry(packageDir: string, face: BuildFace | undefined): string {
+  const libTypesEntry = join(packageDir, 'lib/types/client/index.js')
+  if (face === 'client' && existsSync(libTypesEntry)) {
+    return 'lib/types/client/index.js'
+  }
+  if (existsSync(join(packageDir, 'src/client/index.tsx'))) {
+    return 'src/client/index.tsx'
+  }
+  if (existsSync(join(packageDir, 'src/client/index.ts'))) {
+    return 'src/client/index.ts'
+  }
+  return 'src/client/index.ts'
+}
+
 export function clientBundle(
   packageDir: string,
   libEntry: readonly string[],
   options: ClientBundleOptions = {},
 ): BuildFaceConfig {
   const manifest = readPackageManifest(packageDir)
-  const lib = clientLibraryConfig(manifest, libEntry, options.lib)
+  const resolvedLib = libEntry.map(entry => resolveEntry(packageDir, entry))
+  const lib = clientLibraryConfig(manifest, resolvedLib, options.lib)
   return ({ env }) => {
     const face = buildFace(env?.DSH_BUILD_FACE)
-    const clientEntry = face === undefined ? 'src/client/index.ts' : 'lib/types/client/index.js'
+    const clientEntry = resolveClientEntry(packageDir, face)
     const client = clientConfig(manifest, packageDir, clientEntry, options.clientBanner, options.dualClient === true)
     const node = [lib, ...(options.companions ?? [])]
     const clientFaces = options.dualClient === true
@@ -179,11 +206,12 @@ export function clientBundle(
  */
 export function staticLinked(packageDir: string, libEntry: readonly string[]): BuildFaceConfig {
   const manifest = readPackageManifest(packageDir)
-  const entry = libEntry[0]
-  if (libEntry.length !== 1 || entry === undefined || basename(entry, '.js') !== 'index') {
+  const resolvedEntry = resolveEntry(packageDir, libEntry[0] ?? '')
+  const base = basename(resolvedEntry, extname(resolvedEntry))
+  if (libEntry.length !== 1 || !resolvedEntry || (base !== 'index' && base !== 'client')) {
     throw new Error(`tsdown: ${manifest.name} staticLinked requires one index entry`)
   }
-  return clientOnly([staticManifestConfig(manifest.name, packageDir, entry)])
+  return clientOnly([staticManifestConfig(manifest.name, packageDir, resolvedEntry)])
 }
 
 /**
@@ -195,11 +223,12 @@ export function staticLinked(packageDir: string, libEntry: readonly string[]): B
  */
 export function clientShell(packageDir: string, libEntry: readonly string[]): BuildFaceConfig {
   const { name } = readPackageManifest(packageDir)
-  const names = new Set(libEntry.map(entry => basename(entry, '.js')))
-  if (names.size !== libEntry.length) {
-    throw new Error(`tsdown: ${name} entries collide on an output name: ${libEntry.join(', ')}`)
+  const resolvedLib = libEntry.map(entry => resolveEntry(packageDir, entry))
+  const names = new Set(resolvedLib.map(entry => basename(entry, extname(entry))))
+  if (names.size !== resolvedLib.length) {
+    throw new Error(`tsdown: ${name} entries collide on an output name: ${resolvedLib.join(', ')}`)
   }
-  return clientOnly(libEntry.map(entry => staticLinkedConfig(name, entry)))
+  return clientOnly(resolvedLib.map(entry => staticLinkedConfig(name, entry)))
 }
 
 /**
@@ -223,7 +252,8 @@ export function isStaticLinkedConfig(configs: readonly UserConfig[]): boolean {
  * @throws {Error} when `<packageDir>/package.json` is unreadable or declares no name.
  */
 export function clientLibrary(packageDir: string, libEntry: readonly string[]): BuildFaceConfig {
-  const lib = clientLibraryConfig(readPackageManifest(packageDir), libEntry)
+  const resolvedLib = libEntry.map(entry => resolveEntry(packageDir, entry))
+  const lib = clientLibraryConfig(readPackageManifest(packageDir), resolvedLib)
   return clientOnly([lib])
 }
 

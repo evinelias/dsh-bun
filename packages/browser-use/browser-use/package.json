@@ -32,7 +32,6 @@
       "types": "./lib/types/types.d.ts",
       "default": "./lib/types/types.js"
     }
-    }
   },
   "files": [
     "locale/*.json",

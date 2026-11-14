@@ -363,6 +363,8 @@ export const zh: { [Key in keyof typeof en]: string } = {
 
 /** Japanese copy, checked against the English keys. */
 export const ja = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   'nav': 'モデル',
   'deepSeekAccount': 'DeepSeekアカウント',
   'title': 'モデル',
@@ -540,6 +542,8 @@ export const ja = {
 
 /** Spanish dictionary, checked against the English keys. */
 export const es = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   nav: 'Modelos',
   deepSeekAccount: 'Cuenta DeepSeek',
   title: 'Modelos',
@@ -717,6 +721,8 @@ export const es = {
 
 /** French dictionary, checked against the English keys. */
 export const fr = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   nav: 'Modèles',
   deepSeekAccount: 'Compte DeepSeek',
   title: 'Modèles',
@@ -894,6 +900,8 @@ export const fr = {
 
 /** German dictionary, checked against the English keys. */
 export const de = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   nav: 'Modelle',
   deepSeekAccount: 'DeepSeek-Konto',
   title: 'Modelle',
@@ -1071,6 +1079,8 @@ export const de = {
 
 /** Russian dictionary, checked against the English keys. */
 export const ru = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   nav: 'Модели',
   deepSeekAccount: 'DeepSeek Аккаунт',
   title: 'Модели',
@@ -1248,6 +1258,8 @@ export const ru = {
 
 /** Portuguese dictionary, checked against the English keys. */
 export const pt = {
+  addOpenRouter: 'Add OpenRouter',
+  fillOpenRouterPreset: 'Fill OpenRouter preset',
   nav: 'Modelos',
   deepSeekAccount: 'DeepSeek Conta',
   title: 'Modelos',

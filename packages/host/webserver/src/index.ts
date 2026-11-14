@@ -679,7 +679,7 @@ export class WebServer extends Service {
       try {
         const fullUrl = new URL(req.url ?? '/', this.getOriginSafe())
         const elysiaReq = new Request(fullUrl.href, {
-          method: req.method,
+          method: req.method ?? 'GET',
           headers: req.headers as Record<string, string>,
         })
         const elysiaRes = await this.elysia.handle(elysiaReq)
@@ -816,7 +816,7 @@ export class WebServer extends Service {
                 const { dlopen, FFIType } = await import('bun:ffi')
                 const kernel32 = dlopen('kernel32.dll', {
                   GetCurrentProcess: { args: [], returns: FFIType.ptr },
-                  SetProcessWorkingSetSize: { args: [FFIType.ptr, FFIType.isize, FFIType.isize], returns: FFIType.i32 },
+                  SetProcessWorkingSetSize: { args: [FFIType.ptr, FFIType.ptr, FFIType.ptr], returns: FFIType.i32 },
                 })
                 kernel32.symbols.SetProcessWorkingSetSize(kernel32.symbols.GetCurrentProcess(), -1, -1)
                 kernel32.close()
