@@ -967,7 +967,7 @@ function nodeClientConfig(manifest: PackageManifest, entry: string): UserConfig 
     name: `${manifest.name}/client-node`,
     entry: { 'client.node': entry },
     sourcemap: true,
-    inputOptions: { resolve: { conditionNames: ['node', 'import', 'module', 'default'] } },
+    inputOptions: { resolve: { conditionNames: ['bun', 'node', 'import', 'module', 'default'] } },
     plugins: [browserOnlyAssets(manifest.name), tscSourceMapPlugin(), isolation.plugin],
     outputOptions: {
       entryFileNames: 'client.node.js',
@@ -1032,6 +1032,7 @@ function clientConfig(
     inputOptions: {
       resolve: {
         conditionNames: [
+          'bun',
           (process.env.NODE_ENV ?? 'production') === 'development' ? 'development' : 'production',
           'browser', 'import', 'module', 'default',
         ],

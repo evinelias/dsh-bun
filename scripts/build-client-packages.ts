@@ -43,15 +43,26 @@ async function runTsdown(pkgDir: string): Promise<{ success: boolean; error?: st
 
 function verifyClientBundles(dirs: { name: string; dir: string }[]): string[] {
   const unbundledRequires: string[] = []
-  const remotePattern = /require\(["']@deepseek-ai\/[^"']+\/remote["']\)/
+  const bannedPatterns = [
+    /require\(["']@deepseek-ai\/[^"']+\/remote["']\)/,
+    /require\(["']@deepseek-ai\/cosmokit["']\)/,
+    /require\(["']@deepseek-ai\/dsh-brand["']\)/,
+    /require\(["']@deepseek-ai\/dsh-error["']\)/,
+    /require\(["']@deepseek-ai\/dsh-util[^"']*["']\)/,
+    /require\(["']@deepseek-ai\/dsh-typert-protocol\/remote-info["']\)/,
+  ]
 
   for (const { name, dir } of dirs) {
-    const clientJs = join(dir, 'lib', 'client.js')
-    if (existsSync(clientJs)) {
-      const content = readFileSync(clientJs, 'utf8')
-      const match = remotePattern.exec(content)
-      if (match) {
-        unbundledRequires.push(`${name} -> ${match[0]}`)
+    for (const filename of ['client.js', 'client.browser.js']) {
+      const clientJs = join(dir, 'lib', filename)
+      if (existsSync(clientJs)) {
+        const content = readFileSync(clientJs, 'utf8')
+        for (const pattern of bannedPatterns) {
+          const match = pattern.exec(content)
+          if (match) {
+            unbundledRequires.push(`${name} (${filename}) -> ${match[0]}`)
+          }
+        }
       }
     }
   }
