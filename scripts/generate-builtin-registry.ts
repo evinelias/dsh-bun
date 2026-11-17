@@ -34,7 +34,8 @@ for (const profileName of Object.keys(PROFILE_TEMPLATES)) {
       installAnchor: INSTALL_ANCHOR,
       home: join(homedir(), '.dsh'),
       cwd: process.cwd(),
-      overlays: [],
+      overlayPaths: [],
+      telemetryDisabledEnv: undefined,
       startedBundles: profile.layers.map(l => l.packageName),
     }, profile)
 

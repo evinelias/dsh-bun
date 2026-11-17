@@ -143,8 +143,6 @@ function stripTypeScript(source: string): string {
   return quietRuntimeCall(() => stripTypeScriptTypes(source))
 }
 
-const STRIP_PREFIX = 'async function __dsh_program__() {\n'
-const STRIP_SUFFIX = '\n}'
 const RETAINED_STATE_INSTRUCTIONS = 'Timeout and cancellation results say whether retained variables were preserved or cleared. Restart, sandbox changes, or process failure clears them. Recreate missing variables and resources; conversation history does not restore state. Earlier mutations and tool effects are not rolled back. Approved sandbox escalations use a fresh environment and discard its variables afterward. Do not redeclare existing let, const, or class names; reuse mutable bindings or choose new names. Await tools and cleanup before the program ends; unfinished tools reject. After completion, timeout, or cancellation, new tool calls are rejected and captured output is discarded; background work may still change state. Await child-process completion before the program ends; raw output belongs to the active evaluation.'
 /** Scoped REPL guidance; its output sentence is shared with the other modes. */
 function scopedReplMode(outputInstructions: string): ExecutionMode {
