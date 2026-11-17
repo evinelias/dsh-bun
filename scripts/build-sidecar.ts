@@ -161,7 +161,7 @@ function main(): void {
 
   // 4. Compile standalone sidecar binary (supports optional Ahead-Of-Time bytecode via BUN_AOT=1)
   const targetFlag = process.env.BUN_TARGET ? `--target=${process.env.BUN_TARGET}` : ''
-  const aotFlag = process.env.BUN_AOT === '1' ? '--bytecode' : ''
+  const aotFlag = process.env.BUN_AOT === '1' ? '--bytecode --format=esm' : ''
   console.log(`[4/5] Compiling Bun standalone sidecar binary to ${sidecarPath} ${aotFlag} ${targetFlag}...`)
   execSync(`bun build apps/cli/src/bin.ts --compile ${aotFlag} ${targetFlag} --outfile "${sidecarPath}"`, {
     cwd: root,
