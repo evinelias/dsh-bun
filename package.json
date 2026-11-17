@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.2-rc.1",
+  "version": "0.2.2-rc.4",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -43,6 +43,7 @@
     "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
     "test:approval-policy": "bun test .github/review-ownership/check-approval.test.mjs .github/review-ownership/blame-ownership.test.mjs .github/review-ownership/author-weight.test.mjs",
     "test:issue-management": "bun .github/issue-management/policy.test.mjs",
+    "test:stale-pull-requests": "bun .github/stale-pull-requests/remind.test.mjs",
     "test:snapshot": "vitest run --config vitest.snapshot.config.ts",
     "test:snapshot:record": "DSH_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
@@ -194,7 +195,11 @@
     "benchmark": "bun scripts/benchmark.ts",
     "test:boot": "bun scripts/test-boot.ts",
     "test:release": "bun scripts/verify-release-binary.ts",
-    "test:external-plugins": "bun apps/cli/tests/profiles/external-plugins.ts"
+    "test:external-plugins": "bun apps/cli/tests/profiles/external-plugins.ts",
+    "verify-empty-catch": "bun scripts/verify-empty-catch.ts",
+    "verify-cordis-root": "bun scripts/verify-cordis-root.ts",
+    "verify-plugin-entry-exports": "bun scripts/verify-plugin-entry-exports.ts",
+    "upstream-skills-digest": "bun scripts/upstream-skills-digest.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",
@@ -247,7 +252,7 @@
     "jsdom": "29.1.1",
     "lefthook": "^2.1.12",
     "lightningcss": "^1.33.0",
-    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-from-markdown": "^2.1.0",
     "mdast-util-gfm": "^3.1.0",
     "mermaid": "11.17.2",
     "micromark-extension-gfm": "^3.0.0",
@@ -267,7 +272,6 @@
     "vitest": "^4.1.11",
     "@deepseek-ai/dsh-skill-office": "workspace:*",
     "@deepseek-ai/dsh-tool-workspace-dependencies": "workspace:*",
-    "@deepseek-ai/dsh-tool-working-directory": "workspace:*",
     "@deepseek-ai/dsh-working-directory": "workspace:*",
     "@deepseek-ai/dsh-experimental-worktree": "workspace:*",
     "@deepseek-ai/dsh-experimental-tool-worktree": "workspace:*",
@@ -277,8 +281,10 @@
     "@deepseek-ai/dsh-cua-macos": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge-github": "workspace:*",
+    "@deepseek-ai/dsh-forge-gitlab": "workspace:*",
     "@deepseek-ai/dsh-experimental-forge-session": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*",
+    "@deepseek-ai/dsh-tool-session-list": "workspace:*",
     "@types/bun": "^1.4.3"
   },
   "patchedDependencies": {
