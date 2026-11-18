@@ -41,10 +41,11 @@ fn find_sidecar_path() -> Result<PathBuf, String> {
     if let Ok(current_exe) = std::env::current_exe() {
         if let Some(parent) = current_exe.parent() {
             let candidates = [
+                parent.join(format!("dsh-bun{}", ext)),
                 parent.join(format!("dsh-bun-{}{}", triple, ext)),
                 parent.join(format!("dsh-bun-x86_64-pc-windows-gnu{}", ext)),
                 parent.join(format!("dsh-bun-x86_64-pc-windows-msvc{}", ext)),
-                parent.join(format!("dsh-bun{}", ext)),
+                parent.join("binaries").join(format!("dsh-bun{}", ext)),
                 parent.join("binaries").join(format!("dsh-bun-{}{}", triple, ext)),
                 parent.join("binaries").join(format!("dsh-bun-x86_64-pc-windows-gnu{}", ext)),
                 parent.join("binaries").join(format!("dsh-bun-x86_64-pc-windows-msvc{}", ext)),
@@ -60,11 +61,11 @@ fn find_sidecar_path() -> Result<PathBuf, String> {
     // 2. Check CARGO_MANIFEST_DIR (development mode)
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let dev_candidates = [
+        manifest_dir.join("binaries").join(format!("dsh-bun{}", ext)),
+        manifest_dir.join("..").join("..").join("dist").join(format!("dsh-bun{}", ext)),
         manifest_dir.join("binaries").join(format!("dsh-bun-{}{}", triple, ext)),
         manifest_dir.join("binaries").join(format!("dsh-bun-x86_64-pc-windows-gnu{}", ext)),
         manifest_dir.join("binaries").join(format!("dsh-bun-x86_64-pc-windows-msvc{}", ext)),
-        manifest_dir.join("binaries").join(format!("dsh-bun{}", ext)),
-        manifest_dir.join("..").join("..").join("dist").join(format!("dsh-bun{}", ext)),
     ];
     for c in dev_candidates {
         if c.exists() {

@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 
 async function runVerification() {
   const ext = process.platform === 'win32' ? '.exe' : ''
-  const binaryPath = resolve(process.cwd(), 'dist', `dsh-bun${ext}`)
+  const binaryPath = process.env.BINARY_PATH || resolve(process.cwd(), 'dist', `dsh-bun${ext}`)
 
   console.log(`[1] Launching standalone binary: ${binaryPath}...`)
   const proc = spawn(binaryPath, ['web', '--no-open', '--port', '0'], {

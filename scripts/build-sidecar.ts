@@ -202,11 +202,16 @@ function main(): void {
     // Also update installed Desktop AppData if present
     const installedDir = join(homedir(), 'AppData', 'Local', 'DeepSeek Harness (Bun Edition)')
     if (existsSync(installedDir)) {
-      try {
-        safeCp(sidecarPath, join(installedDir, 'dsh-bun.exe'))
-        console.log(`[+] Updated installed sidecar binary in ${installedDir}`)
-      } catch (e) {
-        console.warn(`[!] Could not update installed sidecar binary (in use?): ${e instanceof Error ? e.message : String(e)}`)
+      for (const target of ['dsh-bun.exe', 'dsh-bun-x86_64-pc-windows-msvc.exe', 'dsh-bun-x86_64-pc-windows-gnu.exe']) {
+        const dest = join(installedDir, target)
+        if (existsSync(dest) || target === 'dsh-bun.exe') {
+          try {
+            safeCp(sidecarPath, dest)
+            console.log(`[+] Updated installed sidecar binary in ${installedDir} (${target})`)
+          } catch (e) {
+            console.warn(`[!] Could not update installed sidecar binary (${target}): ${e instanceof Error ? e.message : String(e)}`)
+          }
+        }
       }
     }
   }
