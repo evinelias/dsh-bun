@@ -95,6 +95,15 @@ async function runVerification() {
     }
     console.log('[+] agentPresets/list passed successfully!')
 
+    // 4b. Test session/create
+    console.log('\n[4b] Testing RPC: session/create...')
+    const createSessionResult = await rpcCall('session/create', { request: {} })
+    console.log('session/create result:', JSON.stringify(createSessionResult))
+    if (!createSessionResult.ok) {
+      throw new Error(`session/create failed: ${JSON.stringify(createSessionResult.error)}`)
+    }
+    console.log('[+] session/create passed successfully!')
+
     // 5. Test pluginInventory/list
     console.log('\n[5] Testing RPC: pluginInventory/list...')
     const pluginsResult = await rpcCall('pluginInventory/list')
