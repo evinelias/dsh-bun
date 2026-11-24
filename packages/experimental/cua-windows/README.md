@@ -43,6 +43,7 @@ Each result contains `id`, `displayName`, and `isRunning`. The ID is an AUMID, i
 - `app.getWindows()` reads the application's current window list. One application can have multiple windows across multiple processes, and the list can become empty as windows close.
 - `app.getWindow(windowId)` returns a Window object without reading accessibility state. Pass the opaque window ID returned by the provider unchanged. Window operations check that the target still belongs to the selected application.
 - `window.getAccessibilityTree()` explicitly reads accessibility state. Element IDs belong to the current observation; reading another window of the same App replaces the facade's current snapshot. Do not mix elements or snapshots across windows.
+- Use `getActionSchema(action)` to query an action's parameter JSON Schema.
 - `window.getScreenshot()` captures that explicit window and does not read or replace its accessibility tree. Screenshots can remain usable when an accessibility read fails.
 - `app.activate()` explicitly requests foreground activation. `app.show()` restores a default window without requesting activation; `window.show()` restores the named window. An absent default returns `WINDOW_NOT_FOUND`; an ambiguous default returns `AMBIGUOUS_WINDOW`.
 
@@ -55,6 +56,8 @@ Each result contains `id`, `displayName`, and `isRunning`. The ID is an AUMID, i
 4. Treat `dispatched` as dispatch evidence, not confirmation of the intended effect. Observe the result before continuing. On a changed window, stale snapshot, timeout, or cancellation, do not blindly repeat input or switch to another window.
 5. Consent applies to the application within the conversation. Respect denial and revocation; do not use another tool to bypass them. Reconnects invalidate retained handles, so select the application again before further operations.
 
+`win.toggleMouse(button, direction)` sends one system mouse button event at the current pointer. A down requires the selected window to be in the foreground and under the pointer. Release through the original Window object. An up releases the desktop button without switching focus or moving the pointer.
+
 <a id="model-experience"></a>
 ## Model Experience
 
@@ -62,7 +65,7 @@ Each result contains `id`, `displayName`, and `isRunning`. The ID is an AUMID, i
 
 #### What the model sees
 
-The program receives application and window identifiers, observations, and action results. Selection alone does not provide an accessibility tree.
+The program receives application and window identifiers, observations, and action results. Selection alone does not provide an accessibility tree. After a successful program, a reminder lists any held keys and buttons with their window and desktop input mode. While one connection holds a key or button, another connection can use different keys or buttons. Program failure, cancellation and reset request release in reverse dispatch order. At disconnect, the helper makes a final bounded release attempt. If it fails or times out, the helper silently discards that connection’s records.
 
 #### Token effect
 
@@ -77,9 +80,11 @@ Inspected results append to model history. Retaining an App, Window, or returned
 <a id="known-limitations-and-deferred-work"></a>
 
 - The npm package omits the Windows helper. Use the [standalone ZIP on x64 or a matching build on ARM64](#setup).
-- Hover, click, scroll and drag use the system pointer. `requireSystemPointerApproval` does not prompt separately for Windows pointer operations.
+- Hover, click, scroll and drag use the system pointer. `requireSystemInputApproval` does not prompt separately for Windows pointer operations.
 - Drag checks the topmost window only at its starting point. An overlay from another application along the path or at the destination can receive the drop even while the selected window stays in the foreground.
-- The helper does not check each key or button release during cleanup. If an input remains held after a failure, release it manually before continuing.
+- Held-input reminders and cleanup use the helper's own dispatches. If you press the same key or button while the helper holds it, its next up can also interrupt your press.
+- Windows routes input through the desktop. After focus changes or the original window closes, a confirmed release means the desktop accepted the up. The original window may not receive the event. Releasing a held input does not check the current foreground window or lock state. The release uses the saved up event and reports `foregroundChanged: null` for an explicit up. If Windows refuses an explicit cleanup request, further CUA input for the task is blocked. Inspect the desktop before starting another task.
+- Cleanup of temporary input inside complete actions does not check each key or button release. If an input remains held after a failure, release it manually before continuing.
 - Helper identity hashes only the exe. Different DLLs with the same apphost can reuse the old service. Stop Hosts using the same output directory before rebuilding to avoid locked files.
 - The Windows handshake requires a positive `maxClickHoldMs`. With zero, it fails with `INVALID_CONFIG` before ordinary clicks or status queries can run.
 - `findApps`, application launch, and app-level accessibility are unavailable. Ask the user to open the required application or window.
