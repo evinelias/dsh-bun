@@ -3,6 +3,7 @@
 import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import semver from 'semver'
+import appBootManifest from '../package.json' with { type: 'json' }
 
 /** Unmet dsh requirements and the exact plugin/runtime exemption decision. */
 export interface PluginCompatibility {
@@ -37,15 +38,14 @@ function identityField(manifest: Record<string, unknown>, field: 'name' | 'versi
 }
 
 /**
- * Read this app-boot package's version, using the release fallback when a compiled binary omits its manifest.
+ * Read this app-boot package's version, falling back to the build-time copy when a compiled binary omits its manifest.
  * @returns the validated runtime semantic version, preserving its exact spelling.
  * @throws if an existing package.json cannot be read or its version is missing or invalid.
  */
 export function getDshRuntimeVersion(): string {
   // The executable's virtual filesystem intercepts string paths, not URL arguments.
   const filename = fileURLToPath(new URL('../package.json', import.meta.url))
-  // shortcut: compiled builds omit this manifest; update the fallback when syncing upstream.
-  if (!fs.existsSync(filename)) return '0.2.2-alpha.3'
+  if (!fs.existsSync(filename)) return runtimeVersionOf(appBootManifest.version)
   const manifest = objectOf(JSON.parse(fs.readFileSync(filename, 'utf8')), 'app-boot package.json')
   return runtimeVersionOf(Object.hasOwn(manifest, 'version') ? manifest.version : undefined)
 }

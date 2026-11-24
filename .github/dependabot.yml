@@ -30,6 +30,9 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    ignore:
+      # Private upstream action this repository cannot read; its Policy jobs skip while the MERGE_POLICY_* variables are unset.
+      - dependency-name: "deepseek-harness/deepseek-harness-check"
     schedule:
       interval: "cron"
       cronjob: "0 4 * * *"

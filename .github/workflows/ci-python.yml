@@ -52,8 +52,9 @@ jobs:
   # keyless black-box, and trusted real-API path. Linux and Windows x64 block
   # pull requests; Linux ARM64 and both macOS architectures run in
   # ci-master.yml.
+  # Upstream only: the reusable builder installs with pnpm, which this Bun fork does not ship.
   python-runtime:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.repository == 'deepseek-ai/deepseek-harness'
     needs: python-sdk
     name: python runtime / release-shaped matrix
     uses: ./.github/workflows/build-exe-for-python-sdk.yml
@@ -79,7 +80,7 @@ jobs:
     if: ${{ !cancelled() && github.event_name == 'pull_request' }}
     steps:
       - name: Fail if any needed job did not succeed
-        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || needs.python-sdk.result == 'skipped' || (github.repository == 'deepseek-ai/deepseek-harness' && needs.python-runtime.result == 'skipped')
         run: |
           echo "::error::Needed job results: ${{ join(needs.*.result, ', ') }}"
           exit 1

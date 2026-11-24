@@ -31,6 +31,13 @@ jobs:
       - name: Verify Kernel, Plugins & Subsystems Suite
         run: bun run test:plugins
 
+      # The Web build imports workspace packages' built lib/ output; same order as scripts/build-sidecar.ts.
+      - name: Generate TypeRT Sources
+        run: bun scripts/generate-typert.ts
+
+      - name: Build Workspace Packages
+        run: bun run build:client
+
       - name: Build Web UI Frontend
         run: bun run build:web
 
