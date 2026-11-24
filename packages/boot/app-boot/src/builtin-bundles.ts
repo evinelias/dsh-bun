@@ -4,6 +4,9 @@ import standardPatchYml from '../../../../packages/bundle/web-app/presets/standa
 import ptcPatchYml from '../../../../packages/bundle/web-app/presets/ptc.patch.yml' with { type: 'text' }
 import minimalPatchYml from '../../../../packages/bundle/web-app/presets/minimal.patch.yml' with { type: 'text' }
 import cordisPatchYml from '../../../../packages/bundle/web-app/presets/cordis.patch.yml' with { type: 'text' }
+import baseManifest from '../../../../packages/bundle/base/package.json' with { type: 'json' }
+import webAppManifest from '../../../../packages/bundle/web-app/package.json' with { type: 'json' }
+import headlessManifest from '../../../../packages/bundle/headless/package.json' with { type: 'json' }
 import headlessPatchYml from '../../../../packages/bundle/headless/cordis.patch.yml' with { type: 'text' }
 
 export interface BuiltinBundleDef {
@@ -23,7 +26,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-base': {
     manifest: {
       name: '@deepseek-ai/dsh-base',
-      version: '0.2.2-alpha.3',
+      version: baseManifest.version,
       dsh: {
         bundle: {
           patch: './cordis.patch.yml',
@@ -37,7 +40,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-web-app': {
     manifest: {
       name: '@deepseek-ai/dsh-web-app',
-      version: '0.2.2-alpha.3',
+      version: webAppManifest.version,
       dsh: {
         bundle: {
           patch: [
@@ -61,7 +64,7 @@ export const BUILTIN_BUNDLES: Record<string, BuiltinBundleDef> = {
   '@deepseek-ai/dsh-headless': {
     manifest: {
       name: '@deepseek-ai/dsh-headless',
-      version: '0.2.2-alpha.3',
+      version: headlessManifest.version,
       dsh: {
         bundle: {
           patch: './cordis.patch.yml',
