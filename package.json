@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-root",
-  "version": "0.2.2-rc.4",
+  "version": "0.2.3-alpha.2",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -199,7 +199,14 @@
     "verify-empty-catch": "bun scripts/verify-empty-catch.ts",
     "verify-cordis-root": "bun scripts/verify-cordis-root.ts",
     "verify-plugin-entry-exports": "bun scripts/verify-plugin-entry-exports.ts",
-    "upstream-skills-digest": "bun scripts/upstream-skills-digest.ts"
+    "upstream-skills-digest": "bun scripts/upstream-skills-digest.ts",
+    "test:coverage:merge-shards": "bun scripts/merge-coverage-shards.ts",
+    "check:ci:coverage-shard": "bun scripts/run-gates.ts ci-coverage-shard",
+    "check:ci:bench-prebuilt": "bun scripts/run-gates.ts ci-bench-prebuilt",
+    "check:ci:build": "bun scripts/run-gates.ts ci-build",
+    "check:ci:consumers-prebuilt": "bun scripts/run-gates.ts ci-consumers-prebuilt",
+    "check:ci:web-snapshot-prebuilt": "bun scripts/run-gates.ts ci-web-snapshot-prebuilt",
+    "verify-css-selectors": "bun scripts/verify-css-selectors.ts"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-hooks-claude-code": "workspace:*",
@@ -285,7 +292,15 @@
     "@deepseek-ai/dsh-experimental-forge-session": "workspace:*",
     "@deepseek-ai/dsh-action-cards": "workspace:*",
     "@deepseek-ai/dsh-tool-session-list": "workspace:*",
-    "@types/bun": "^1.4.3"
+    "@types/bun": "^1.4.3",
+    "@deepseek-ai/dsh-dingtalk": "workspace:*",
+    "@deepseek-ai/dsh-feishu": "workspace:*",
+    "@deepseek-ai/dsh-wecom": "workspace:*",
+    "@deepseek-ai/dsh-tencent-meeting": "workspace:*",
+    "@deepseek-ai/dsh-mcp-manager": "workspace:*",
+    "@deepseek-ai/dsh-linear": "workspace:*",
+    "@deepseek-ai/dsh-notion": "workspace:*",
+    "@deepseek-ai/dsh-tencent-docs": "workspace:*"
   },
   "patchedDependencies": {
     "@botiverse/oar@0.67.0": "patches/@botiverse__oar@0.67.0.patch",
